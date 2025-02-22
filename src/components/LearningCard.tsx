@@ -1,12 +1,26 @@
 "use client";
 
+import { School, BookOpenCheck, BrainCircuit } from "lucide-react";
+
 export const LearningCard = () => {
   return (
     <div className="flex-1">
       {/* 下拉选择器 */}
-      <select className="px-4 py-2 rounded-full bg-[#8175D6] text-white border border-white mb-4">
-        <option>I can do it</option>
-      </select>
+      <div className="relative mb-4 w-[240px]">
+        <select 
+          className="w-full appearance-none px-6 py-3 rounded-full bg-[#8175D6] text-white border border-white/30 
+          focus:outline-none focus:border-white cursor-pointer"
+        >
+          <option value="1">I can do it</option>
+          <option value="2">I can read it</option>
+          <option value="3">I can write it</option>
+        </select>
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 6L8 10L12 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </div>
 
       {/* 主要内容卡片 */}
       <div className="bg-[#8175D6] rounded-3xl p-8 mb-6">
@@ -45,11 +59,20 @@ export const LearningCard = () => {
         </div>
       </div>
 
-      {/* 底部按钮组 - 移到卡片外部 */}
+      {/* 底部按钮组 - 更新按钮样式 */}
       <div className="grid grid-cols-3 gap-4">
-        <button className="bg-[#8BC34A] text-white py-3 rounded-xl text-lg font-medium hover:opacity-90">In School</button>
-        <button className="bg-[#B39DDB] text-white py-3 rounded-xl text-lg font-medium hover:opacity-90">AI Reading</button>
-        <button className="bg-[#81D4FA] text-white py-3 rounded-xl text-lg font-medium hover:opacity-90">Small Quiz</button>
+        <button className="bg-[#8BC34A] text-white py-3 rounded-xl text-lg font-medium hover:opacity-90 flex items-center justify-center gap-2">
+          <School className="w-5 h-5" />
+          <span>In School</span>
+        </button>
+        <button className="bg-[#B39DDB] text-white py-3 rounded-xl text-lg font-medium hover:opacity-90 flex items-center justify-center gap-2">
+          <BookOpenCheck className="w-5 h-5" />
+          <span>AI Reading</span>
+        </button>
+        <button className="bg-[#81D4FA] text-white py-3 rounded-xl text-lg font-medium hover:opacity-90 flex items-center justify-center gap-2">
+          <BrainCircuit className="w-5 h-5" />
+          <span>Small Quiz</span>
+        </button>
       </div>
     </div>
   );

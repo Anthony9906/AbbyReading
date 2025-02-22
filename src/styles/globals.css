@@ -1,0 +1,33 @@
+/* 自定义下拉选项样式 */
+select option {
+  background-color: #8175D6;
+  color: white;
+  padding: 12px;
+}
+
+/* 移除默认的下拉箭头（针对不同浏览器） */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Firefox specific styles */
+select:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 #fff;
+}
+
+/* 自定义滚动条样式 */
+select::-webkit-scrollbar {
+  width: 8px;
+}
+
+select::-webkit-scrollbar-track {
+  background: #6B5ECD;
+}
+
+select::-webkit-scrollbar-thumb {
+  background: #B39DDB;
+  border-radius: 4px;
+} 
