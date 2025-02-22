@@ -2,11 +2,11 @@
 
 export const StatsCard = () => {
   return (
-    <div className="w-[400px] bg-white rounded-3xl p-6">
+    <div className="w-[320px] bg-white rounded-3xl p-6">
       <h2 className="text-xl font-bold mb-4">Your MAP Level</h2>
       <div className="space-y-4">
         <img 
-          src="https://cdn.builder.io/api/v1/image/assets/7698e99ae5fd45348ab4fb99dc503337/e389aaff16e07f33c5d07c0cc8a0c2f1" 
+          src="/images/map-growth.png" 
           alt="MAP Growth" 
           className="w-full h-auto object-contain"
         />
@@ -24,3 +24,5 @@ export const StatsCard = () => {
     </div>
   );
 };
+
+
