@@ -15,6 +15,7 @@ interface PDFPreviewProps {
   unitTitle: string;
   containerStyle?: 'small' | 'large';
   existingStory?: string;
+  fileType: 'reading' | 'report';
 }
 
 export const PDFPreview = ({ 
@@ -23,7 +24,8 @@ export const PDFPreview = ({
   containerStyle = 'small', 
   unitId, 
   unitTitle,
-  existingStory 
+  existingStory,
+  fileType
 }: PDFPreviewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -58,6 +60,7 @@ export const PDFPreview = ({
         unitId={unitId}
         unitTitle={unitTitle}
         existingStory={existingStory}
+        fileType={fileType}
       />
     </>
   );

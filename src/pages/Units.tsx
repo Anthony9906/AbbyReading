@@ -164,6 +164,7 @@ export default function Units() {
                                   unitTitle={unit.title}
                                   containerStyle="small"
                                   existingStory={unit.story?.content}
+                                  fileType="reading"
                                 />
                               ) : (
                                 <img 
@@ -186,6 +187,7 @@ export default function Units() {
                                 unitId={unit.id}
                                 unitTitle={unit.title}
                                 containerStyle="small"
+                                fileType="report"
                               />
                             ) : (
                               <img 

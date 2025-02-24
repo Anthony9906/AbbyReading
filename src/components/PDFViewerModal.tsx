@@ -15,6 +15,7 @@ interface PDFViewerModalProps {
   unitId: string;
   unitTitle: string;
   existingStory?: string;
+  fileType: 'reading' | 'report';
 }
 
 // 初始化 Gemini API
@@ -26,7 +27,8 @@ export const PDFViewerModal = ({
   onClose, 
   unitId, 
   unitTitle,
-  existingStory 
+  existingStory,
+  fileType 
 }: PDFViewerModalProps) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [scale, setScale] = useState(1);
@@ -81,9 +83,13 @@ export const PDFViewerModal = ({
         }).promise;
         
         const base64Image = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+
+        const prompt = fileType === 'reading' 
+          ? "请提取这个PDF页面中的所有文本内容，因为这是一篇小学课文，所以只需要识别并提取课文正文内容，不需要识别和提取课文中的标注信息、说明信息、页眉页脚信息、练习题等，课文正文一般是指正文部分和正文中人物的对话内容。另外，请确保按照从上到下，从左到右的顺序提取信息，不要颠倒顺序，不要在没有标点符号的地方换行。只需要返回提取的文本，不需要其他解释。"
+          : "请提取这个PDF页面中的所有文本内容，这是一份学生的本周英语学习内容的报告，需要识别并提取这份报告中的本周英语单词和本周语法知识点，英语单词和语法知识点需要分开提取，英语单词直接提取，单词只会出现在第一页上，语法知识点需要提取出语法知识点和例句，不要包含任何中文内容。只需要返回提取的文本，不需要其他解释。";
         
         const result = await model.generateContent([
-          "请提取这个PDF页面中的所有文本内容，因为这是一篇小学课文，所以只需要识别并提取课文正文内容，不需要识别和提取课文中的标注信息、说明信息、页眉页脚信息、练习题等，课文正文一般是指正文部分和正文中人物的对话内容。另外，请确保按照从上到下，从左到右的顺序提取信息，不要颠倒顺序，不要在没有标点符号的地方换行。只需要返回提取的文本，不需要其他解释。",
+          prompt,
           {
             inlineData: {
               data: base64Image,
@@ -93,7 +99,7 @@ export const PDFViewerModal = ({
         ]);
         
         const response = await result.response;
-        fullText += `Page ${i}\n${response.text()}\n\n`;
+        fullText += `第 ${i} 页\n${response.text()}\n\n`;
       }
       
       setPdfText(fullText);
@@ -107,10 +113,72 @@ export const PDFViewerModal = ({
     }
   };
 
-  const handleSaveStory = async () => {
+  const cleanJsonString = (jsonString: string): string => {
+    // 找到第一个 { 和最后一个 } 的位置
+    const start = jsonString.indexOf('{');
+    const end = jsonString.lastIndexOf('}') + 1;
+    
+    if (start === -1 || end === 0) {
+      throw new Error('Invalid JSON structure');
+    }
+    
+    // 提取有效的 JSON 部分
+    let cleanedJson = jsonString.slice(start, end);
+    
+    // 处理可能的转义字符
+    cleanedJson = cleanedJson
+      .replace(/\\n/g, ' ')        // 替换换行
+      .replace(/\\"/g, '"')        // 处理转义的引号
+      .replace(/\\/g, '\\')        // 处理其他转义字符
+      .replace(/\s+/g, ' ');       // 压缩多余空格
+    
+    return cleanedJson;
+  };
+
+  const handleSaveReport = async () => {
     setIsSaving(true);
     try {
-      // 首先检查是否已存在 inclass 类型的 story
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      
+      const prompt = `请为这段文本中Vocabulary中的每一个英语单词添加解析，解析的内容包括单词、单词属性、单词音标、英文释义、中文释义、英文例句、英文例句的中文翻译。然后分析Grammar中的语法知识点描述内容，提供必要的语法学习要点和技巧的补充，请将你对单词和语法的分析结果以JSON的格式返回，注意单词的每一个信息都要分开，语法部分将原始内容和建议内容分开即可，对JSON中包含的特殊字符进行处理，以便我能正常解析。`;
+
+      const result = await model.generateContent([
+        prompt,
+        pdfText
+      ]);
+      
+      const response = await result.response;
+      const analysisResult = response.text();
+      
+      try {
+        // 清理并解析 JSON
+        const cleanedJson = cleanJsonString(analysisResult);
+        const parsedResult = JSON.parse(cleanedJson);
+        console.log('AI Analysis Result:', parsedResult);
+        
+        toast.success('作业分析完成！');
+      } catch (parseError) {
+        console.error('Raw AI response:', analysisResult);
+        console.error('Failed to parse AI response:', parseError);
+        toast.error('AI返回格式解析失败');
+        return;
+      }
+    } catch (error) {
+      console.error('分析作业内容时出错:', error);
+      toast.error('分析失败，请重试');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveStory = async () => {
+    if (fileType === 'report') {
+      handleSaveReport();
+      return;
+    }
+
+    setIsSaving(true);
+    try {
       const { data: existingStory, error: checkError } = await supabase
         .from('stories')
         .select('id')
@@ -118,12 +186,11 @@ export const PDFViewerModal = ({
         .eq('type', 'inclass')
         .single();
 
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 是"没有找到记录"的错误
+      if (checkError && checkError.code !== 'PGRST116') {
         throw checkError;
       }
 
       if (existingStory) {
-        // 如果已存在，询问用户是否要替换
         const confirmed = window.confirm(
           '这个单元已经有一个课文故事了，是否要替换它？'
         );
@@ -133,7 +200,6 @@ export const PDFViewerModal = ({
           return;
         }
 
-        // 用户确认替换，更新现有记录
         const { error: updateError } = await supabase
           .from('stories')
           .update({
@@ -146,7 +212,6 @@ export const PDFViewerModal = ({
         
         toast.success('故事更新成功！');
       } else {
-        // 不存在，创建新记录
         const { error: insertError } = await supabase
           .from('stories')
           .insert([
@@ -197,7 +262,9 @@ export const PDFViewerModal = ({
               disabled={isLoading}
             >
               <FileText className="control-icon" />
-              <span className="button-text">识别文本</span>
+              <span className="button-text">
+                {fileType === 'reading' ? '识别课文' : '识别作业'}
+              </span>
             </button>
             {isTextVisible && (
               <button
@@ -207,7 +274,7 @@ export const PDFViewerModal = ({
               >
                 <Save className="control-icon" />
                 <span className="button-text">
-                  {isSaving ? '保存中...' : '保存故事'}
+                  {isSaving ? '保存中...' : (fileType === 'reading' ? '保存故事' : '保存作业')}
                 </span>
               </button>
             )}

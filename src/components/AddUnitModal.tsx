@@ -316,12 +316,13 @@ export const AddUnitModal = ({ isOpen, onClose, onAddUnit, initialData }: AddUni
                       />
                     ) : reading.path?.toLowerCase().endsWith('.pdf') ? (
                       <div className="pdf-container">
-                        <PDFPreview 
+                        <PDFPreview
                           url={getFileUrl(reading.path)!}
                           className="pdf-preview"
                           unitId={initialData?.id || ''}
                           unitTitle={initialData?.title || ''}
                           containerStyle="large"
+                          fileType="reading"
                         />
                       </div>
                     ) : (
@@ -365,12 +366,13 @@ export const AddUnitModal = ({ isOpen, onClose, onAddUnit, initialData }: AddUni
                       />
                     ) : weeklyReport.path?.toLowerCase().endsWith('.pdf') ? (
                       <div className="pdf-container">
-                        <PDFPreview 
+                        <PDFPreview
                           url={getFileUrl(weeklyReport.path)!}
                           className="pdf-preview"
                           unitId={initialData?.id || ''}
                           unitTitle={initialData?.title || ''}
                           containerStyle="large"
+                          fileType="report"
                         />
                       </div>
                     ) : (
