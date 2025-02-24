@@ -5,6 +5,7 @@ import { Plus, FileText, FileImage } from "lucide-react";
 import { AddUnitModal } from "../components/AddUnitModal";
 import { supabase } from "../lib/supabase";
 import { PDFPreview } from "../components/PDFPreview";
+import "../styles/pages/Units.css";
 
 interface Unit {
   id: string;
@@ -20,6 +21,7 @@ interface Unit {
 export default function Units() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
 
   useEffect(() => {
     fetchUnits();
@@ -27,9 +29,12 @@ export default function Units() {
 
   const fetchUnits = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data, error } = await supabase
         .from('units')
         .select('*')
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -53,74 +58,122 @@ export default function Units() {
     units: { label: "UNITS", value: 521 },
   };
 
+  const handleAddUnit = async (unitData: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('units')
+        .insert([
+          {
+            ...unitData,
+            user_id: user?.id
+          }
+        ]);
+
+      if (error) throw error;
+      fetchUnits(); // 刷新列表
+    } catch (error) {
+      console.error('Error adding unit:', error);
+    }
+  };
+
+  const handleEditUnit = async (unitData: any) => {
+    try {
+      const { error } = await supabase
+        .from('units')
+        .update(unitData)
+        .eq('id', editingUnit?.id);
+
+      if (error) throw error;
+      fetchUnits();
+      setEditingUnit(null);
+    } catch (error) {
+      console.error('Error updating unit:', error);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#6B5ECD] p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="units-page">
+      <div className="units-container">
         <UserHeader 
           avatar="/images/avatar.svg"
           name="Abby"
           stats={userStats}
         />
         
-        <div className="flex gap-6">
-          {/* 左侧内容区 */}
-          <div className="flex-1 bg-[#8175D6] rounded-3xl p-8 relative">
-            {/* 添加按钮 */}
+        <div className="content-wrapper">
+          <div className="main-content">
             <button 
-              className="absolute left-8 top-8 w-12 h-12 bg-[#6B5ECD] rounded-full flex items-center justify-center"
+              className="add-button"
               onClick={() => setIsModalOpen(true)}
             >
-              <Plus className="w-6 h-6 text-white" />
+              <Plus className="add-icon" />
             </button>
 
-            <h1 className="text-3xl font-bold text-white mb-6 ml-20">Units</h1>
+            <h1 className="page-title">Units</h1>
             
-            {/* Unit 列表 */}
-            <div className="space-y-4">
+            <div className="units-list">
               {units.map((unit) => (
-                <div key={unit.id} className="bg-[#6B5ECD] rounded-2xl p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h2 className="text-2xl font-bold text-white mb-4">{unit.title}</h2>
-                      <div className="flex gap-2">
-                        <span className="bg-[#4CAF50] text-white px-3 py-1 rounded-full text-sm">{unit.unit}</span>
-                        <span className="bg-[#4CAF50] text-white px-3 py-1 rounded-full text-sm">{unit.week}</span>
-                        <span className="bg-[#4CAF50] text-white px-3 py-1 rounded-full text-sm">{unit.type}</span>
+                <div key={unit.id} className="unit-card">
+                  <div className="unit-content">
+                    <div className="unit-info">
+                      <h2 className="unit-title">{unit.title}</h2>
+                      <div className="unit-tags">
+                        <span className="tag">{unit.unit}</span>
+                        <span className="tag">{unit.week}</span>
+                        <span className="tag">{unit.type}</span>
+                        <button 
+                          className="edit-button"
+                          onClick={() => setEditingUnit(unit)}
+                        >
+                          Edit
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-white font-bold">{unit.progress}%</div>
-                      <div className="flex gap-2">
-                        {/* Reading 文件预览 */}
-                        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                    <div className="unit-status">
+                      <div className="progress">{unit.progress}%</div>
+                      <div className="file-previews">
+                        <div className="preview-box">
                           {unit.reading_file ? (
                             unit.reading_file.toLowerCase().endsWith('.pdf') ? (
-                              <PDFPreview url={getFileUrl(unit.reading_file)!} className="w-full h-full" />
+                              <PDFPreview 
+                                url={getFileUrl(unit.reading_file)!} 
+                                className="preview"
+                                unitId={unit.id}
+                                unitTitle={unit.title}
+                                containerStyle="small"
+                              />
                             ) : (
                               <img 
                                 src={getFileUrl(unit.reading_file)!} 
                                 alt="Reading" 
-                                className="w-full h-full object-cover"
+                                className="preview"
                               />
                             )
                           ) : (
-                            <FileText className="w-8 h-8 text-[#6B5ECD]" />
+                            <FileText className="placeholder-icon" />
                           )}
                         </div>
-                        {/* Weekly Report 文件预览 */}
-                        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                        <div className="preview-box">
                           {unit.report_file ? (
                             unit.report_file.toLowerCase().endsWith('.pdf') ? (
-                              <PDFPreview url={getFileUrl(unit.report_file)!} className="w-full h-full" />
+                              <PDFPreview 
+                                url={getFileUrl(unit.report_file)!} 
+                                className="preview"
+                                unitId={unit.id}
+                                unitTitle={unit.title}
+                                containerStyle="small"
+                              />
                             ) : (
                               <img 
                                 src={getFileUrl(unit.report_file)!} 
                                 alt="Report" 
-                                className="w-full h-full object-cover"
+                                className="preview"
                               />
                             )
                           ) : (
-                            <FileImage className="w-8 h-8 text-[#6B5ECD]" />
+                            <FileImage className="placeholder-icon" />
                           )}
                         </div>
                       </div>
@@ -131,7 +184,6 @@ export default function Units() {
             </div>
           </div>
 
-          {/* 右侧统计卡片 */}
           <StatsCard />
         </div>
       </div>
@@ -140,8 +192,19 @@ export default function Units() {
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          fetchUnits(); // 关闭模态框后刷新列表
+          fetchUnits();
         }}
+        onAddUnit={handleAddUnit}
+      />
+
+      <AddUnitModal 
+        isOpen={editingUnit !== null}
+        onClose={() => {
+          setEditingUnit(null);
+          fetchUnits();
+        }}
+        onAddUnit={handleEditUnit}
+        initialData={editingUnit}
       />
     </div>
   );

@@ -1,0 +1,16 @@
+.home-page {
+  min-height: 100vh;
+  background-color: #6B5ECD;
+  padding: 2rem;
+}
+
+.home-container {
+  max-width: 80rem; /* 1280px */
+  margin: 0 auto;
+}
+
+.cards-container {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+} 

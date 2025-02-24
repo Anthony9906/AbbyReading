@@ -1,31 +1,33 @@
 "use client";
 
+import '../styles/components/StatsCard.css';
+
 export const StatsCard = () => {
   return (
-    <div className="w-[320px] bg-[#E8E5FA] rounded-[32px] p-8">
-      <h2 className="text-[24px] font-bold text-[#1A1A1A] mb-6">Your MAP Level</h2>
-      <div className="space-y-6">
+    <div className="stats-card">
+      <h2 className="card-title">Your MAP Level</h2>
+      <div className="card-content">
         {/* MAP Growth Logo */}
-        <div className="bg-white rounded-2xl p-4">
+        <div className="map-logo">
           <img 
             src="/images/map-growth.png" 
             alt="MAP Growth" 
-            className="w-full h-auto object-contain"
+            className="logo-image"
           />
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="stats-grid">
           {/* Lexiles Score */}
-          <div className="bg-white rounded-2xl p-4 flex flex-col items-center">
-            <div className="text-[#6B5ECD] text-[32px] font-bold leading-tight">210L</div>
-            <div className="text-[#666666] text-[14px]">Lexiles</div>
+          <div className="stat-box lexiles">
+            <div className="stat-value">210L</div>
+            <div className="stat-label">Lexiles</div>
           </div>
 
           {/* AR Score */}
-          <div className="bg-[#6B5ECD] rounded-2xl p-4 flex flex-col items-center">
-            <div className="text-white text-[32px] font-bold leading-tight">21</div>
-            <div className="text-white text-[14px]">AR</div>
+          <div className="stat-box ar">
+            <div className="stat-value">21</div>
+            <div className="stat-label">AR</div>
           </div>
         </div>
       </div>

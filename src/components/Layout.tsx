@@ -1,8 +1,9 @@
 import { Outlet } from 'react-router-dom';
+import '../styles/components/Layout.css';
 
 export const Layout = () => {
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="layout">
       <Outlet />
     </div>
   );

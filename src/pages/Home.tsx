@@ -1,6 +1,7 @@
 import { UserHeader } from "../components/UserHeader";
 import { StatsCard } from "../components/StatsCard";
 import { LearningCard } from "../components/LearningCard";
+import "../styles/pages/Home.css";
 
 const userStats = {
   stories: { label: "STORIES", value: 178 },
@@ -10,14 +11,14 @@ const userStats = {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#6B5ECD] p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="home-page">
+      <div className="home-container">
         <UserHeader 
           avatar="/images/avatar.svg"
           name="Abby"
           stats={userStats}
         />
-        <div className="flex gap-6">
+        <div className="cards-container">
           <LearningCard />
           <StatsCard />
         </div>

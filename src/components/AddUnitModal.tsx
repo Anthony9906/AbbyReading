@@ -1,13 +1,22 @@
-import { FC, useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import toast from "react-hot-toast";
 import { FileText, X, Loader2 } from "lucide-react";
+import { PDFPreview } from "./PDFPreview";
+import "../styles/components/AddUnitModal.css";
 
-interface AddUnitModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface Unit {
+  id: string;
+  title: string;
+  unit: string;
+  week: string;
+  type: string;
+  begin_date?: string;
+  end_date?: string;
+  reading_file?: string | null;
+  report_file?: string | null;
 }
 
 interface FileUploadState {
@@ -17,9 +26,82 @@ interface FileUploadState {
   path?: string;
 }
 
-export const AddUnitModal: FC<AddUnitModalProps> = ({ isOpen, onClose }) => {
+interface AddUnitModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAddUnit: (unitData: any) => Promise<void>;
+  initialData?: Unit | null;
+}
+
+const FileUploadArea = ({ 
+  onFileChange, 
+  isUploading, 
+  label 
+}: { 
+  onFileChange: (file: File) => void;
+  isUploading: boolean;
+  label: string;
+}) => {
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDragIn = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragOut = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files?.length) {
+      onFileChange(files[0]);
+    }
+  }, [onFileChange]);
+
+  return (
+    <div
+      className={`file-upload-area ${isDragging ? 'dragging' : ''}`}
+      onDragEnter={handleDragIn}
+      onDragLeave={handleDragOut}
+      onDragOver={handleDrag}
+      onDrop={handleDrop}
+      onClick={() => document.getElementById(`file-input-${label}`)?.click()}
+    >
+      {isUploading ? (
+        <Loader2 className="upload-loader" />
+      ) : (
+        <>
+          <FileText className="upload-icon" />
+          <p className="upload-text">Drop your {label} here or click to browse</p>
+        </>
+      )}
+      <input
+        id={`file-input-${label}`}
+        type="file"
+        accept="image/*,.pdf"
+        onChange={(e) => e.target.files?.[0] && onFileChange(e.target.files[0])}
+        className="hidden-input"
+      />
+    </div>
+  );
+};
+
+export const AddUnitModal = ({ isOpen, onClose, onAddUnit, initialData }: AddUnitModalProps) => {
   const [title, setTitle] = useState("");
-  const [unit, setUnit] = useState("");
+  const [unitNumber, setUnitNumber] = useState("");
   const [week, setWeek] = useState("");
   const [type, setType] = useState("CET");
   const [beginDate, setBeginDate] = useState<Date | null>(null);
@@ -29,6 +111,57 @@ export const AddUnitModal: FC<AddUnitModalProps> = ({ isOpen, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isReadingUploading, setIsReadingUploading] = useState(false);
   const [isReportUploading, setIsReportUploading] = useState(false);
+
+  const getFileUrl = (path: string | null) => {
+    if (!path) return null;
+    const { data } = supabase.storage
+      .from('unit-files')
+      .getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  useEffect(() => {
+    if (initialData) {
+      setTitle(initialData.title);
+      setUnitNumber(initialData.unit);
+      setWeek(initialData.week);
+      setType(initialData.type);
+      setBeginDate(initialData.begin_date ? new Date(initialData.begin_date) : null);
+      setEndDate(initialData.end_date ? new Date(initialData.end_date) : null);
+      
+      if (initialData.reading_file) {
+        const fileUrl = getFileUrl(initialData.reading_file);
+        setReading({ 
+          file: new File([], "existing-reading"),
+          preview: initialData.reading_file.toLowerCase().endsWith('.pdf') ? null : fileUrl,
+          path: initialData.reading_file,
+          progress: 100
+        });
+      }
+      if (initialData.report_file) {
+        const fileUrl = getFileUrl(initialData.report_file);
+        setWeeklyReport({ 
+          file: new File([], "existing-report"),
+          preview: initialData.report_file.toLowerCase().endsWith('.pdf') ? null : fileUrl,
+          path: initialData.report_file,
+          progress: 100
+        });
+      }
+    } else {
+      resetForm();
+    }
+  }, [initialData, isOpen]);
+
+  const resetForm = () => {
+    setTitle("");
+    setUnitNumber("");
+    setWeek("");
+    setType("CET");
+    setBeginDate(null);
+    setEndDate(null);
+    setReading(null);
+    setWeeklyReport(null);
+  };
 
   const handleFileChange = useCallback(async (file: File, type: 'reading' | 'report') => {
     const setState = type === 'reading' ? setReading : setWeeklyReport;
@@ -73,22 +206,24 @@ export const AddUnitModal: FC<AddUnitModalProps> = ({ isOpen, onClose }) => {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase
-        .from('units')
-        .insert([{
-          title, unit, week, type,
-          begin_date: beginDate?.toISOString(),
-          end_date: endDate?.toISOString(),
-          reading_file: reading?.path,
-          report_file: weeklyReport?.path
-        }]);
+      const unitData = {
+        title,
+        unit: unitNumber,
+        week,
+        type,
+        begin_date: beginDate?.toISOString(),
+        end_date: endDate?.toISOString(),
+        reading_file: reading?.path || null,
+        report_file: weeklyReport?.path || null
+      };
 
-      if (error) throw error;
-      toast.success('Unit created successfully');
+      await onAddUnit(unitData);
+      toast.success(initialData ? 'Unit updated successfully' : 'Unit created successfully');
       onClose();
+      resetForm();
     } catch (error) {
-      console.error('Error creating unit:', error);
-      toast.error('Failed to create unit');
+      console.error('Error saving unit:', error);
+      toast.error(initialData ? 'Failed to update unit' : 'Failed to create unit');
     } finally {
       setIsSubmitting(false);
     }
@@ -97,161 +232,192 @@ export const AddUnitModal: FC<AddUnitModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-3xl p-8 w-[800px] max-h-[90vh] overflow-y-auto relative">
+    <div className="modal-overlay">
+      <div className="modal-container">
         {isSubmitting && (
-          <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-[#6B5ECD] animate-spin" />
+          <div className="loading-overlay">
+            <Loader2 className="loading-spinner" />
           </div>
         )}
 
-        <h2 className="text-2xl font-bold mb-6">Add New Unit</h2>
+        <h2 className="modal-title">
+          {initialData ? 'Edit Unit' : 'Add New Unit'}
+        </h2>
+        
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium mb-1">Title</label>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full p-2 border rounded-lg"
+                className="form-input"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Unit</label>
+            <div className="form-group">
+              <label className="form-label">Unit</label>
               <input
                 type="text"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                className="w-full p-2 border rounded-lg"
+                value={unitNumber}
+                onChange={(e) => setUnitNumber(e.target.value)}
+                className="form-input"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Week</label>
+            <div className="form-group">
+              <label className="form-label">Week</label>
               <input
                 type="text"
                 value={week}
                 onChange={(e) => setWeek(e.target.value)}
-                className="w-full p-2 border rounded-lg"
+                className="form-input"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Type</label>
+            <div className="form-group">
+              <label className="form-label">Type</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full p-2 border rounded-lg"
+                className="form-input"
               >
                 <option value="CET">CET</option>
                 <option value="FET">FET</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Begin Date</label>
+            <div className="form-group">
+              <label className="form-label">Begin Date</label>
               <DatePicker
                 selected={beginDate}
                 onChange={date => setBeginDate(date)}
-                className="w-full p-2 border rounded-lg"
+                className="form-input"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">End Date</label>
+            <div className="form-group">
+              <label className="form-label">End Date</label>
               <DatePicker
                 selected={endDate}
                 onChange={date => setEndDate(date)}
-                className="w-full p-2 border rounded-lg"
+                className="form-input"
               />
             </div>
           </div>
 
-          {/* 文件上传区域 */}
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium mb-1">Reading</label>
-              <div className="flex items-center gap-4">
-                <div className="flex-1 relative">
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], 'reading')}
-                    className="w-full p-2 border rounded-lg"
-                  />
-                  {isReadingUploading && (
-                    <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
-                      <Loader2 className="w-5 h-5 text-[#6B5ECD] animate-spin" />
-                    </div>
-                  )}
-                </div>
-                {reading && (
-                  <div className="flex items-center gap-2 p-2 border rounded-lg">
+          <div className="file-upload-grid">
+            <div className="upload-section">
+              <label className="form-label">Reading</label>
+              {reading ? (
+                <div className="file-preview">
+                  <div className="preview-content">
                     {reading.preview ? (
-                      <img src={reading.preview} alt="Preview" className="w-10 h-10 object-cover rounded" />
+                      <img 
+                        src={reading.preview} 
+                        alt="Preview" 
+                        className="preview-image"
+                      />
+                    ) : reading.path?.toLowerCase().endsWith('.pdf') ? (
+                      <div className="pdf-container">
+                        <PDFPreview 
+                          url={getFileUrl(reading.path)!}
+                          className="pdf-preview"
+                          unitId={initialData?.id || ''}
+                          unitTitle={initialData?.title || ''}
+                          containerStyle="large"
+                        />
+                      </div>
                     ) : (
-                      <FileText className="w-10 h-10" />
+                      <FileText className="file-icon" />
                     )}
-                    <span className="max-w-[200px] truncate">{reading.file.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setReading(null)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
                   </div>
-                )}
-              </div>
+                  <div className="file-info">
+                    <p className="file-name">
+                      {reading.file.name === "existing-reading" 
+                        ? reading.path?.split('/').pop() || ''
+                        : reading.file.name}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setReading(null)}
+                    className="remove-file"
+                  >
+                    <X className="remove-icon" />
+                  </button>
+                </div>
+              ) : (
+                <FileUploadArea
+                  onFileChange={(file) => handleFileChange(file, 'reading')}
+                  isUploading={isReadingUploading}
+                  label="Reading"
+                />
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Weekly Report</label>
-              <div className="flex items-center gap-4">
-                <div className="flex-1 relative">
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], 'report')}
-                    className="w-full p-2 border rounded-lg"
-                  />
-                  {isReportUploading && (
-                    <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
-                      <Loader2 className="w-5 h-5 text-[#6B5ECD] animate-spin" />
-                    </div>
-                  )}
-                </div>
-                {weeklyReport && (
-                  <div className="flex items-center gap-2 p-2 border rounded-lg">
+            <div className="upload-section">
+              <label className="form-label">Weekly Report</label>
+              {weeklyReport ? (
+                <div className="file-preview">
+                  <div className="preview-content">
                     {weeklyReport.preview ? (
-                      <img src={weeklyReport.preview} alt="Preview" className="w-10 h-10 object-cover rounded" />
+                      <img 
+                        src={weeklyReport.preview} 
+                        alt="Preview" 
+                        className="preview-image"
+                      />
+                    ) : weeklyReport.path?.toLowerCase().endsWith('.pdf') ? (
+                      <div className="pdf-container">
+                        <PDFPreview 
+                          url={getFileUrl(weeklyReport.path)!}
+                          className="pdf-preview"
+                          unitId={initialData?.id || ''}
+                          unitTitle={initialData?.title || ''}
+                          containerStyle="large"
+                        />
+                      </div>
                     ) : (
-                      <FileText className="w-10 h-10" />
+                      <FileText className="file-icon" />
                     )}
-                    <span className="max-w-[200px] truncate">{weeklyReport.file.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setWeeklyReport(null)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
                   </div>
-                )}
-              </div>
+                  <div className="file-info">
+                    <p className="file-name">
+                      {weeklyReport.file.name === "existing-report" 
+                        ? weeklyReport.path?.split('/').pop() || ''
+                        : weeklyReport.file.name}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWeeklyReport(null)}
+                    className="remove-file"
+                  >
+                    <X className="remove-icon" />
+                  </button>
+                </div>
+              ) : (
+                <FileUploadArea
+                  onFileChange={(file) => handleFileChange(file, 'report')}
+                  isUploading={isReportUploading}
+                  label="Report"
+                />
+              )}
             </div>
           </div>
 
-          <div className="flex gap-4">
+          <div className="form-actions">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-[#8BC34A] text-white py-3 rounded-xl disabled:opacity-50"
+              className="submit-button"
             >
-              Create
+              {initialData ? 'Update' : 'Create'}
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                onClose();
+                resetForm();
+              }}
               disabled={isSubmitting}
-              className="flex-1 bg-[#B39DDB] text-white py-3 rounded-xl disabled:opacity-50"
+              className="cancel-button"
             >
               Cancel
             </button>
