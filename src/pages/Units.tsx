@@ -152,7 +152,7 @@ export default function Units() {
                               />
                             )
                           ) : (
-                            <FileText className="placeholder-icon" />
+                            <FileImage className="placeholder-icon" />
                           )}
                         </div>
                         <div className="preview-box">
@@ -173,7 +173,7 @@ export default function Units() {
                               />
                             )
                           ) : (
-                            <FileImage className="placeholder-icon" />
+                            <FileText className="placeholder-icon" />
                           )}
                         </div>
                       </div>
