@@ -14,9 +14,17 @@ interface PDFPreviewProps {
   unitId: string;
   unitTitle: string;
   containerStyle?: 'small' | 'large';
+  existingStory?: string;
 }
 
-export const PDFPreview = ({ url, className, containerStyle = 'small', unitId, unitTitle }: PDFPreviewProps) => {
+export const PDFPreview = ({ 
+  url, 
+  className, 
+  containerStyle = 'small', 
+  unitId, 
+  unitTitle,
+  existingStory 
+}: PDFPreviewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -35,7 +43,7 @@ export const PDFPreview = ({ url, className, containerStyle = 'small', unitId, u
         >
           <Page
             pageNumber={1}
-            width={containerStyle === 'small' ? 64 : 354}
+            width={containerStyle === 'small' ? 98 : 354}
             renderTextLayer={false}
             renderAnnotationLayer={false}
             className="pdf-page"
@@ -49,6 +57,7 @@ export const PDFPreview = ({ url, className, containerStyle = 'small', unitId, u
         onClose={() => setIsModalOpen(false)}
         unitId={unitId}
         unitTitle={unitTitle}
+        existingStory={existingStory}
       />
     </>
   );

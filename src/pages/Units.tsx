@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { UserHeader } from "../components/UserHeader";
 import { StatsCard } from "../components/StatsCard";
-import { Plus, FileText, FileImage } from "lucide-react";
+import { Plus, FileText, FileImage, Settings2 } from "lucide-react";
 import { AddUnitModal } from "../components/AddUnitModal";
 import { supabase } from "../lib/supabase";
 import { PDFPreview } from "../components/PDFPreview";
@@ -16,6 +16,12 @@ interface Unit {
   reading_file: string | null;
   report_file: string | null;
   progress: number;
+  stories?: Array<{
+    content: string;
+  }>;
+  story?: {
+    content: string;
+  } | null;
 }
 
 export default function Units() {
@@ -33,12 +39,25 @@ export default function Units() {
       
       const { data, error } = await supabase
         .from('units')
-        .select('*')
+        .select(`
+          *,
+          stories (
+            content,
+            type
+          )
+        `)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUnits(data || []);
+
+      // 处理数据，找到每个 unit 的 inclass 类型故事
+      const unitsWithStory = data?.map(unit => ({
+        ...unit,
+        story: unit.stories?.find((story: { type: string }) => story.type === 'inclass') || null
+      }));
+
+      setUnits(unitsWithStory || []);
     } catch (error) {
       console.error('Error fetching units:', error);
     }
@@ -123,34 +142,37 @@ export default function Units() {
                         <span className="tag">{unit.unit}</span>
                         <span className="tag">{unit.week}</span>
                         <span className="tag">{unit.type}</span>
-                        <button 
-                          className="edit-button"
-                          onClick={() => setEditingUnit(unit)}
-                        >
-                          Edit
-                        </button>
                       </div>
                     </div>
+                    <button 
+                      className="edit-button"
+                      onClick={() => setEditingUnit(unit)}
+                    >
+                      <Settings2 className="edit-icon" />
+                    </button>
                     <div className="unit-status">
                       <div className="progress">{unit.progress}%</div>
                       <div className="file-previews">
-                        <div className="preview-box">
+                        <div className={`preview-box ${unit.story ? 'has-story' : ''}`}>
                           {unit.reading_file ? (
-                            unit.reading_file.toLowerCase().endsWith('.pdf') ? (
-                              <PDFPreview 
-                                url={getFileUrl(unit.reading_file)!} 
-                                className="preview"
-                                unitId={unit.id}
-                                unitTitle={unit.title}
-                                containerStyle="small"
-                              />
-                            ) : (
-                              <img 
-                                src={getFileUrl(unit.reading_file)!} 
-                                alt="Reading" 
-                                className="preview"
-                              />
-                            )
+                            <div className="preview-container">
+                              {unit.reading_file.toLowerCase().endsWith('.pdf') ? (
+                                <PDFPreview 
+                                  url={getFileUrl(unit.reading_file)!} 
+                                  className="preview"
+                                  unitId={unit.id}
+                                  unitTitle={unit.title}
+                                  containerStyle="small"
+                                  existingStory={unit.story?.content}
+                                />
+                              ) : (
+                                <img 
+                                  src={getFileUrl(unit.reading_file)!} 
+                                  alt="Reading" 
+                                  className="preview"
+                                />
+                              )}
+                            </div>
                           ) : (
                             <FileImage className="placeholder-icon" />
                           )}

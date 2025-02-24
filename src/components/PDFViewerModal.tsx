@@ -1,5 +1,5 @@
 import { Document, Page, pdfjs } from 'react-pdf';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2, ZoomIn, ZoomOut, X, Maximize2, Minimize2, FileText, Save } from 'lucide-react';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -12,14 +12,22 @@ interface PDFViewerModalProps {
   url: string;
   isOpen: boolean;
   onClose: () => void;
-  unitId: string;  // 添加 unit id prop
-  unitTitle: string;  // 添加 unit title prop
+  unitId: string;
+  unitTitle: string;
+  existingStory?: string;
 }
 
 // 初始化 Gemini API
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_API_KEY);
 
-export const PDFViewerModal = ({ url, isOpen, onClose, unitId, unitTitle }: PDFViewerModalProps) => {
+export const PDFViewerModal = ({ 
+  url, 
+  isOpen, 
+  onClose, 
+  unitId, 
+  unitTitle,
+  existingStory 
+}: PDFViewerModalProps) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [scale, setScale] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -27,6 +35,13 @@ export const PDFViewerModal = ({ url, isOpen, onClose, unitId, unitTitle }: PDFV
   const [isTextVisible, setIsTextVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && existingStory) {
+      setIsTextVisible(true);
+      setPdfText(existingStory);
+    }
+  }, [isOpen, existingStory]);
 
   if (!isOpen) return null;
 
@@ -95,21 +110,60 @@ export const PDFViewerModal = ({ url, isOpen, onClose, unitId, unitTitle }: PDFV
   const handleSaveStory = async () => {
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      // 首先检查是否已存在 inclass 类型的 story
+      const { data: existingStory, error: checkError } = await supabase
         .from('stories')
-        .insert([
-          {
-            unit_id: unitId,
-            title: unitTitle,
-            content: pdfText,
-            type: 'inclass',
-            created_at: new Date().toISOString()
-          }
-        ]);
+        .select('id')
+        .eq('unit_id', unitId)
+        .eq('type', 'inclass')
+        .single();
 
-      if (error) throw error;
-      
-      toast.success('故事保存成功！');
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 是"没有找到记录"的错误
+        throw checkError;
+      }
+
+      if (existingStory) {
+        // 如果已存在，询问用户是否要替换
+        const confirmed = window.confirm(
+          '这个单元已经有一个课文故事了，是否要替换它？'
+        );
+
+        if (!confirmed) {
+          setIsSaving(false);
+          return;
+        }
+
+        // 用户确认替换，更新现有记录
+        const { error: updateError } = await supabase
+          .from('stories')
+          .update({
+            content: pdfText,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingStory.id);
+
+        if (updateError) throw updateError;
+        
+        toast.success('故事更新成功！');
+      } else {
+        // 不存在，创建新记录
+        const { error: insertError } = await supabase
+          .from('stories')
+          .insert([
+            {
+              unit_id: unitId,
+              title: unitTitle,
+              content: pdfText,
+              type: 'inclass',
+              created_at: new Date().toISOString()
+            }
+          ]);
+
+        if (insertError) throw insertError;
+        
+        toast.success('故事保存成功！');
+      }
+
       onClose();
     } catch (error) {
       console.error('保存故事时出错:', error);
