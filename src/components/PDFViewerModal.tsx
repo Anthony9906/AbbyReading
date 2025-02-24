@@ -6,6 +6,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from '../lib/supabase'; // 修改为正确的路径
 import '../styles/components/PDFViewerModal.css';
+import { toast } from 'react-hot-toast';
 
 interface PDFViewerModalProps {
   url: string;
@@ -42,7 +43,7 @@ export const PDFViewerModal = ({ url, isOpen, onClose, unitId, unitTitle }: PDFV
   const extractTextFromPDF = async () => {
     setIsLoading(true);
     setIsTextVisible(true);
-    setPdfText('正在准备识别...');
+    setPdfText('');
     
     try {
       const pdf = await pdfjs.getDocument(url).promise;
@@ -67,7 +68,7 @@ export const PDFViewerModal = ({ url, isOpen, onClose, unitId, unitTitle }: PDFV
         const base64Image = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
         
         const result = await model.generateContent([
-          "请提取这个PDF页面中的所有文本内容，因为这是一篇小学课文，所以只需要识别并提取课文正文内容，不需要识别和提取课文中的标注信息、说明信息、页眉页脚信息、练习题等，课文正文一般是指正文部分和正文中人物的对话内容。另外，请确保按照从上到下，从左到右的顺序提取信息，不要颠倒顺序。只需要返回提取的文本，不需要其他解释。",
+          "请提取这个PDF页面中的所有文本内容，因为这是一篇小学课文，所以只需要识别并提取课文正文内容，不需要识别和提取课文中的标注信息、说明信息、页眉页脚信息、练习题等，课文正文一般是指正文部分和正文中人物的对话内容。另外，请确保按照从上到下，从左到右的顺序提取信息，不要颠倒顺序，不要在没有标点符号的地方换行。只需要返回提取的文本，不需要其他解释。",
           {
             inlineData: {
               data: base64Image,
@@ -77,16 +78,15 @@ export const PDFViewerModal = ({ url, isOpen, onClose, unitId, unitTitle }: PDFV
         ]);
         
         const response = await result.response;
-        fullText += `第 ${i} 页\n${response.text()}\n\n`;
-        
-        // 添加进度提示
-        setPdfText(fullText + `\n正在处理第 ${i}/${pdf.numPages} 页...`);
+        fullText += `Page ${i}\n${response.text()}\n\n`;
       }
       
       setPdfText(fullText);
+      toast.success('文本识别完成！');
     } catch (error) {
       console.error('提取PDF文本时出错:', error);
-      setPdfText('提取文本失败，请重试。');
+      setPdfText('');
+      toast.error('提取文本失败，请重试');
     } finally {
       setIsLoading(false);
     }
@@ -109,11 +109,11 @@ export const PDFViewerModal = ({ url, isOpen, onClose, unitId, unitTitle }: PDFV
 
       if (error) throw error;
       
-      alert('故事保存成功！');
+      toast.success('故事保存成功！');
       onClose();
     } catch (error) {
       console.error('保存故事时出错:', error);
-      alert('保存失败，请重试');
+      toast.error('保存失败，请重试');
     } finally {
       setIsSaving(false);
     }
@@ -179,7 +179,7 @@ export const PDFViewerModal = ({ url, isOpen, onClose, unitId, unitTitle }: PDFV
         </div>
 
         <div className="modal-content">
-          <div className={`pdf-viewer ${isTextVisible ? 'with-sidebar' : ''}`}>
+          <div className="pdf-viewer">
             <Document
               file={url}
               loading={
@@ -204,18 +204,21 @@ export const PDFViewerModal = ({ url, isOpen, onClose, unitId, unitTitle }: PDFV
 
           {isTextVisible && (
             <div className="text-sidebar">
-              {isLoading ? (
-                <div className="loading-container">
-                  <Loader2 className="loading-spinner" />
-                </div>
-              ) : (
-                <textarea
-                  value={pdfText}
-                  onChange={(e) => setPdfText(e.target.value)}
-                  className="text-area"
-                  placeholder="识别的文本将显示在这里..."
-                />
-              )}
+              <div className={`text-content ${isLoading ? 'loading' : ''}`}>
+                {isLoading ? (
+                  <div className="text-loading-container">
+                    <Loader2 className="loading-spinner" />
+                    <div className="loading-text">正在识别文本...</div>
+                  </div>
+                ) : (
+                  <textarea
+                    value={pdfText}
+                    onChange={(e) => setPdfText(e.target.value)}
+                    className="text-area"
+                    placeholder="识别的文本将显示在这里..."
+                  />
+                )}
+              </div>
             </div>
           )}
         </div>

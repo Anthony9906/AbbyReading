@@ -72,8 +72,10 @@
 
 .pdf-viewer {
   flex: 1;
-  overflow: auto;
   padding: 1rem;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .pdf-viewer.with-sidebar {
@@ -96,30 +98,63 @@
 
 .pdf-page {
   margin-bottom: 1rem;
+  min-width: min-content;
+}
+
+/* 确保 PDF 页面容器可以水平滚动 */
+.pdf-page > canvas {
+  max-width: none;
 }
 
 .text-sidebar {
-  width: 33.333333%;
-  overflow: auto;
-  padding: 1rem;
-  background-color: #f9fafb;
+  width: 380px;
+  flex-shrink: 0; /* 防止侧边栏被压缩 */
+  border-left: 1px solid #e2e8f0;
+  background-color: #ebe3fa;
+  display: flex;
+  flex-direction: column;
 }
 
-.text-area {
+.text-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.text-content.loading {
+  justify-content: center;
+  align-items: center;
+}
+
+.text-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.loading-text {
+  color: #6B5ECD;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.text-sidebar .text-area {
   width: 100%;
   height: 100%;
-  padding: 0.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.25rem;
-  font-family: monospace;
-  font-size: 0.875rem;
+  padding: 1rem;
+  border: none;
   resize: none;
+  background-color: transparent;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #50377f;
 }
 
 .text-area:focus {
   outline: none;
-  border-color: #6B5ECD;
-  box-shadow: 0 0 0 2px rgba(107, 94, 205, 0.2);
 }
 
 @keyframes spin {
