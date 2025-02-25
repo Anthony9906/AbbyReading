@@ -8,6 +8,17 @@ import { VocabPopover } from './VocabPopover';
 import OpenAI from 'openai';
 import { toast } from 'react-hot-toast';
 
+interface GrammarPoint {
+  id: string;
+  grammar_original_text: string;
+  grammar_point: string;
+  explanation: string;
+  example: string;
+  exercise: string;
+  solution: string;
+  summary: string;
+}
+
 interface Unit {
   id: string;
   title: string;
@@ -18,6 +29,7 @@ interface Unit {
     word: string;
     chinese_definition: string;
   }>;
+  grammar?: Array<GrammarPoint>;
 }
 
 interface VocabWord {
@@ -56,6 +68,7 @@ export const LearningCard = () => {
   const [selectedWord, setSelectedWord] = useState<WordSelection | null>(null);
   const [selectedText, setSelectedText] = useState<TextSelection | null>(null);
   const [readingSpeed, setReadingSpeed] = useState<'very_slow' | 'slow' | 'normal'>('normal');
+  const [activeSlide, setActiveSlide] = useState(0);
 
   useEffect(() => {
     fetchUnits();
@@ -77,6 +90,16 @@ export const LearningCard = () => {
           vocabulary (
             word,
             chinese_definition
+          ),
+          grammar (
+            id,
+            grammar_original_text,
+            grammar_point,
+            explanation,
+            example,
+            exercise,
+            solution,
+            summary
           )
         `)
         .eq('user_id', user?.id)
@@ -89,7 +112,8 @@ export const LearningCard = () => {
         .map(unit => ({
           ...unit,
           story: unit.stories?.find(s => s.type === 'inclass'),
-          vocabulary: unit.vocabulary
+          vocabulary: unit.vocabulary,
+          grammar: unit.grammar
         }))
         .filter(unit => unit.story && unit.vocabulary?.length > 0);
 
@@ -345,215 +369,302 @@ export const LearningCard = () => {
   };
 
   return (
-    <div className="learning-card">
-      {/* 主要内容卡片 */}
-      <div className="content-card">
-        <div className="content-header">
-          <h2 className="content-title">{selectedUnit?.title || 'Select a unit'}</h2>
-          <div className="select-container">
-            <select 
-              className="level-select"
-              value={selectedUnit?.id || ''}
-              onChange={(e) => handleUnitChange(e.target.value)}
-            >
-              {units.map(unit => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.title}
-                </option>
-              ))}
-            </select>
-            <div className="select-arrow">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 6L8 10L12 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-        <div className="content-sections">
-          {/* Reading Section */}
-          <div className="reading-section">
-            <div 
-              className="story-text"
-              onMouseUp={handleTextSelection}
-            >
-              {selectedUnit?.story?.content && selectedUnit?.vocabulary ? 
-                highlightVocabulary(
-                  selectedUnit.story.content, 
-                  selectedUnit.vocabulary.map(v => v.word)
-                ) : 
-                'No story available'
-              }
-            </div>
-            <div className="tag reading">Ask me questions</div>
-          </div>
-
-          {/* Vocabulary Section */}
-          <div className="vocabulary-section">
-            <div className="word-cloud">
-              {selectedUnit?.vocabulary?.map((vocab) => (
-                <span 
-                  key={vocab.word} 
-                  className="word-tag" 
-                  onClick={(e) => handleWordClick(vocab.word, e)}
-                >
-                  {vocab.word}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 底部按钮组 */}
-      <div className="action-buttons">
-        <button className="action-button school">
-          <School className="button-icon" />
+    <div className="learning-card-container">
+      {/* 移动到顶部的按钮组 */}
+      <div className="learning-card-tabs">
+        <button 
+          className={`tab-button ${activeSlide === 0 ? 'active' : ''}`}
+          onClick={() => setActiveSlide(0)}
+        >
+          <School size={20} />
           <span>In School</span>
         </button>
-        <button className="action-button reading">
-          <BookOpenCheck className="button-icon" />
-          <span>AI Reading</span>
+        <button 
+          className={`tab-button ${activeSlide === 1 ? 'active' : ''}`}
+          onClick={() => setActiveSlide(1)}
+        >
+          <BookOpenCheck size={20} />
+          <span>Grammar</span>
         </button>
-        <button className="action-button quiz">
-          <BrainCircuit className="button-icon" />
-          <span>Small Quiz</span>
+        <button 
+          className={`tab-button ${activeSlide === 2 ? 'active' : ''}`}
+          onClick={() => setActiveSlide(2)}
+        >
+          <BrainCircuit size={20} />
+          <span>Stories</span>
         </button>
       </div>
-      
-      {selectedWord && (
-        <VocabPopover 
-          curr_word={selectedWord.word}
-          isLoading={selectedWord.isLoading}
-          {...(selectedWord.details || {})}
-          position={selectedWord.position}
-          onClose={() => setSelectedWord(null)}
-        />
-      )}
-      
-      {selectedText && (
-        <div 
-          className="text-selection-popover"
-          style={{
-            position: 'fixed',
-            left: selectedText.position.x,
-            top: selectedText.position.y,
-            transform: 'translateX(-50%) translateY(-100%)',
-            backgroundColor: 'white',
-            padding: '1.5rem',
-            borderRadius: '12px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
-            zIndex: 1000,
-            minWidth: '380px',
-          }}
-        >
-          <div style={{ 
-            backgroundColor: '#f5f5f5',
-            padding: '1rem 0',
-            borderRadius: '8px',
-            fontSize: '1.8rem',
-            color: 'rgb(100 92 156)'
-          }}>
-            {selectedText.text}
+
+      {/* 主卡片内容 */}
+      <div className="learning-card">
+        {/* 主要内容卡片 */}
+        <div className="content-card">
+          <div className="content-header">
+            <h2 className="content-title">{selectedUnit?.title || 'Select a unit'}</h2>
+            <div className="select-container">
+              <select 
+                className="level-select"
+                value={selectedUnit?.id || ''}
+                onChange={(e) => handleUnitChange(e.target.value)}
+              >
+                {units.map(unit => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.title}
+                  </option>
+                ))}
+              </select>
+              <div className="select-arrow">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4 6L8 10L12 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
           </div>
-          
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginTop: '1rem' 
-          }}>
-            {/* 速度选择按钮组 - 左对齐 */}
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {[
-                { id: 'very_slow', label: '0.5' },
-                { id: 'slow', label: '0.75' },
-                { id: 'normal', label: '1' }
-              ].map(speed => (
-                <button
-                  key={speed.id}
-                  onClick={() => setReadingSpeed(speed.id as typeof readingSpeed)}
-                  style={{
-                    padding: '0.4rem 0.8rem',
-                    border: '1px solid #6B5ECD',
-                    borderRadius: '4px',
-                    background: readingSpeed === speed.id ? '#6B5ECD' : 'white',
-                    color: readingSpeed === speed.id ? 'white' : '#6B5ECD',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {speed.label}
-                </button>
-              ))}
+          <div className="content-sections">
+            {/* Slides Container */}
+            <div className="slides-container">
+                <div className="slides" >
+                  {/* Reading Section - Slide 1 */}
+                  <div className={`slide ${activeSlide === 0 ? 'active' : ''}`}>
+                    <div className="reading-section">
+                      <div 
+                        className="story-text"
+                        onMouseUp={handleTextSelection}
+                      >
+                      {selectedUnit?.story?.content && selectedUnit?.vocabulary ? 
+                        highlightVocabulary(
+                          selectedUnit.story.content, 
+                          selectedUnit.vocabulary.map(v => v.word)
+                        ) : 
+                        'No story available'
+                      }
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Grammar Section - Slide 2 */}
+                  <div className={`slide ${activeSlide === 1 ? 'active' : ''}`}>
+                    <div className="grammar-section">
+                      {selectedUnit?.grammar?.map((item, index) => (
+                        <div key={item.id} className="grammar-item">
+                          <div className="grammar-original">
+                            <h3>Original Text</h3>
+                            <p>{item.grammar_original_text}</p>
+                          </div>
+                          
+                          <div className="grammar-point">
+                            <h3>Grammar Point</h3>
+                            <p>{item.grammar_point}</p>
+                          </div>
+
+                          <div className="grammar-explanation">
+                            <h3>Explanation</h3>
+                            <p>{item.explanation}</p>
+                          </div>
+
+                          <div className="grammar-example">
+                            <h3>Example</h3>
+                            <p>{item.example}</p>
+                          </div>
+
+                          <div className="grammar-exercise">
+                            <h3>Exercise</h3>
+                            <p>{item.exercise}</p>
+                            <div className="solution">
+                              <h4>Solution</h4>
+                              <p>{item.solution}</p>
+                            </div>
+                          </div>
+
+                          <div className="grammar-summary">
+                            <h3>Summary</h3>
+                            <p>{item.summary}</p>
+                          </div>
+                        </div>
+                      )) || (
+                        <p className="no-content">No grammar points available</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quiz Section - Slide 3 */}
+                  <div className={`slide ${activeSlide === 2 ? 'active' : ''}`}>
+                    <div className="quiz-section">
+                      <div className="quiz-content">
+                        <h3>Quiz</h3>
+                        <p>Test your understanding</p>
+                      </div>
+                    </div>
+                  </div>
+              </div>
+
+              {/* 将指示器移到 slides 容器外部 */}
+              <div className="slide-indicators">
+                {[0, 1, 2].map((index) => (
+                  <button
+                    key={index}
+                    className={`slide-indicator ${activeSlide === index ? 'active' : ''}`}
+                    onClick={() => setActiveSlide(index)}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
             </div>
 
-            {/* 播放/停止按钮 - 右对齐 */}
-            {selectedText.isPlaying ? (
-              <button 
-                onClick={handleStop}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.6rem 1.2rem',
-                  background: '#6B5ECD',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                }}
-              >
-                <Square size={18} />
-                <span>Stop</span>
-              </button>
-            ) : (
-              <button 
-                onClick={() => handlePlay()}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.6rem 1.2rem',
-                  background: '#6B5ECD',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                }}
-              >
-                <Play size={18} />
-                <span>Play</span>
-              </button>
-            )}
+            {/* Vocabulary Section */}
+            <div className="vocabulary-section">
+              <div className="word-cloud">
+                {selectedUnit?.vocabulary?.map((vocab) => (
+                  <span 
+                    key={vocab.word} 
+                    className="word-tag" 
+                    onClick={(e) => handleWordClick(vocab.word, e)}
+                  >
+                    {vocab.word}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
+        </div>
 
-          <button
-            onClick={() => setSelectedText(null)}
+        
+        
+        {selectedWord && (
+          <VocabPopover 
+            curr_word={selectedWord.word}
+            isLoading={selectedWord.isLoading}
+            {...(selectedWord.details || {})}
+            position={selectedWord.position}
+            onClose={() => setSelectedWord(null)}
+          />
+        )}
+        
+        {selectedText && (
+          <div 
+            className="text-selection-popover"
             style={{
-              position: 'absolute',
-              top: '0.75rem',
-              right: '0.75rem',
-              width: '24px',
-              height: '24px',
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              fontSize: '1.2rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#666',
+              position: 'fixed',
+              left: selectedText.position.x,
+              top: selectedText.position.y,
+              transform: 'translateX(-50%) translateY(-100%)',
+              backgroundColor: 'white',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+              zIndex: 1000,
+              minWidth: '380px',
             }}
           >
-            ×
-          </button>
-        </div>
-      )}
+            <div style={{ 
+              backgroundColor: '#f5f5f5',
+              padding: '1rem 0',
+              borderRadius: '8px',
+              fontSize: '1.8rem',
+              color: 'rgb(100 92 156)'
+            }}>
+              {selectedText.text}
+            </div>
+            
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginTop: '1rem' 
+            }}>
+              {/* 速度选择按钮组 - 左对齐 */}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {[
+                  { id: 'very_slow', label: '0.5' },
+                  { id: 'slow', label: '0.75' },
+                  { id: 'normal', label: '1' }
+                ].map(speed => (
+                  <button
+                    key={speed.id}
+                    onClick={() => setReadingSpeed(speed.id as typeof readingSpeed)}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      border: '1px solid #6B5ECD',
+                      borderRadius: '4px',
+                      background: readingSpeed === speed.id ? '#6B5ECD' : 'white',
+                      color: readingSpeed === speed.id ? 'white' : '#6B5ECD',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {speed.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* 播放/停止按钮 - 右对齐 */}
+              {selectedText.isPlaying ? (
+                <button 
+                  onClick={handleStop}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.6rem 1.2rem',
+                    background: '#6B5ECD',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                  }}
+                >
+                  <Square size={18} />
+                  <span>Stop</span>
+                </button>
+              ) : (
+                <button 
+                  onClick={() => handlePlay()}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.6rem 1.2rem',
+                    background: '#6B5ECD',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                  }}
+                >
+                  <Play size={18} />
+                  <span>Play</span>
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={() => setSelectedText(null)}
+              style={{
+                position: 'absolute',
+                top: '0.75rem',
+                right: '0.75rem',
+                width: '24px',
+                height: '24px',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                fontSize: '1.2rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#666',
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

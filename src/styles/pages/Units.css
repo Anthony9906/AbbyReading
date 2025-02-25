@@ -1,6 +1,5 @@
 .units-page {
   min-height: 100vh;
-  background-color: #6B5ECD;
   padding: 2rem;
 }
 
@@ -21,6 +20,7 @@
   border-radius: 1.5rem;
   padding: 2rem;
   position: relative;
+  margin-top: 34px;
 }
 
 .add-button {

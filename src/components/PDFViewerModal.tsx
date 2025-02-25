@@ -182,6 +182,7 @@ export const PDFViewerModal = ({
       if (grammarArray?.length > 0) {
         const grammarData = grammarArray.map((gram: any) => ({
           unit_id: unitId,
+          grammar_original_text: gram.grammar_original_text || gram.grammarOriginalText,
           grammar_point: gram.grammar_point || gram.grammarPoint,
           explanation: gram.explanation,
           example: gram.example,

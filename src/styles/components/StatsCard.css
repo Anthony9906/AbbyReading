@@ -1,9 +1,10 @@
 .stats-card {
   width: 320px;
   height: 480px;
-  background-color: #E8E5FA;
+  background-color: #d9d6f3;
   border-radius: 32px;
   padding: 2rem;
+  margin-top: 34px;
 }
 
 .card-title {

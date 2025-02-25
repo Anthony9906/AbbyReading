@@ -62,9 +62,7 @@
 }
 
 .content-sections {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  height: auto;
 }
 
 .reading-section,
@@ -72,6 +70,12 @@
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 1rem;
   padding: 1.5rem;
+}
+
+/* 确保词汇部分正确显示 */
+.vocabulary-section {
+  margin-top: 1rem;
+  height: auto;
 }
 
 .story-text {
@@ -83,6 +87,14 @@
 
 .story-text p {
   margin: 0;
+}
+
+/* 内容区域样式 */
+.story-text,
+.grammar-content,
+.quiz-content {
+  height: auto;
+  width: 100%;
 }
 
 .highlight {
@@ -150,53 +162,10 @@
   margin-bottom: 0.5rem;
 }
 
-.action-buttons {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-}
-
-.action-button {
-  padding: 0.75rem;
-  border-radius: 0.75rem;
-  border: none;
-  color: white;
-  font-size: 1.125rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.action-button:hover {
-  opacity: 0.9;
-}
-
-.action-button.school {
-  background-color: #8BC34A;
-}
-
-.action-button.reading {
-  background-color: #B39DDB;
-}
-
-.action-button.quiz {
-  background-color: #81D4FA;
-}
-
-.button-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
 .reading-section {
   background: rgba(107, 94, 205, 0.8);
   border-radius: 1.5rem;
   padding: 2rem;
-  margin-bottom: 1.5rem;
   transition: all 0.3s ease;
 }
 
@@ -233,4 +202,225 @@
 
 .story-paragraph:hover .play-line-button {
   opacity: 0.9;
+}
+
+.slides-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.slides {
+  display: flex;
+  width: 100%;
+  height: auto;
+  transition: transform 0.3s ease;
+}
+
+.slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: auto;
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+  transition: opacity 0.3s ease;
+}
+
+/* 激活的 slide 才显示 */
+.slide.active {
+  opacity: 1;
+  visibility: visible;
+  position: relative;
+}
+
+.reading-section,
+.ai-chat-section,
+.quiz-section {
+  height: auto;
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 修改滑动指示器的位置，使其不影响内容高度 */
+.slide-indicators {
+  position: relative;
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.slide-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  background-color: #a298eb;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.slide-indicator.active {
+  background-color: #a1c973;
+  transform: scale(1.1);
+}
+
+.ai-chat-section,
+.quiz-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #666;
+}
+
+.ai-chat-content,
+.quiz-content {
+  max-width: 80%;
+}
+
+.ai-chat-content h3,
+.quiz-content h3 {
+  color: #6B5ECD;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+
+/* 确保其他卡片的标签样式一致 */
+.tag.ai {
+  background: rgba(107, 94, 205, 0.1);
+  color: #6B5ECD;
+}
+
+.tag.quiz {
+  background: rgba(107, 94, 205, 0.1);
+  color: #6B5ECD;
 } 
+
+
+.learning-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  width: 100%;
+}
+
+.learning-card-tabs {
+  display: flex;
+  gap: 1rem;
+  padding: 0 5rem;
+  margin-bottom: -6px;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: #d8d6f3;
+  color: #6b5ecd;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tab-button:hover {
+  background: #c1baf0;
+}
+
+.tab-button.active {
+  background: #6B5ECD;
+  color: white;
+}
+
+/* 移除原来底部按钮的样式 */
+.learning-card .bottom-buttons {
+  display: none;
+}
+
+.grammar-section {
+  padding: 2rem;
+  overflow-y: visible;
+  max-height: none;
+}
+
+.grammar-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.grammar-item {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.grammar-item > div {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.grammar-item > div:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.grammar-item h3 {
+  color: #6B5ECD;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.grammar-item h4 {
+  color: #666;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.grammar-item p {
+  color: #2d2d2d;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.grammar-original {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.grammar-point {
+  color: #6B5ECD;
+  font-weight: 500;
+}
+
+.grammar-exercise .solution {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #eee;
+}
+
+.grammar-summary {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.no-content {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+}

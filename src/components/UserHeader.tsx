@@ -34,12 +34,12 @@ export const UserHeader: FC<UserHeaderProps> = ({ avatar, name, stats }) => {
         >
           <BookOpen className="stat-icon" />
           <div className="stat-label">STORIES</div>
-          <div className="stat-value">{stats.stories.value}</div>
+          <div className="stat-value-header">{stats.stories.value}</div>
         </div>
         <div className="stat-item">
           <BookText className="stat-icon" />
           <div className="stat-label">GLOSSARY</div>
-          <div className="stat-value">{stats.glossary.value}</div>
+          <div className="stat-value-header">{stats.glossary.value}</div>
         </div>
         <div 
           className="stat-item"
@@ -47,7 +47,7 @@ export const UserHeader: FC<UserHeaderProps> = ({ avatar, name, stats }) => {
         >
           <GraduationCap className="stat-icon" />
           <div className="stat-label">UNITS</div>
-          <div className="stat-value">{stats.units.value}</div>
+          <div className="stat-value-header">{stats.units.value}</div>
         </div>
       </div>
     </div>
