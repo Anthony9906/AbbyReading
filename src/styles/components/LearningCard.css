@@ -10,10 +10,10 @@
 }
 
 .content-title {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 600;
   color: white;
-  margin: 0;
+  margin: 0 30px;
 }
 
 .select-container {
@@ -75,9 +75,10 @@
 }
 
 .story-text {
-  color: white;
+  color: #ffffffd1;
   line-height: 1.8;
   white-space: pre-wrap;
+  font-size: 20px;
 }
 
 .story-text p {
@@ -106,6 +107,8 @@
 .tag.reading {
   background-color: #6B5ECD;
   color: white;
+  margin: 20px 0;
+  padding: 8px 20px;
 }
 
 .tag.vocabulary {
@@ -190,7 +193,7 @@
 }
 
 .reading-section {
-  background: rgba(107, 94, 205, 0.2);
+  background: rgba(107, 94, 205, 0.8);
   border-radius: 1.5rem;
   padding: 2rem;
   margin-bottom: 1.5rem;
@@ -198,5 +201,36 @@
 }
 
 .reading-section:hover {
-  background: rgba(107, 94, 205, 0.25);
+  background: rgba(107, 94, 205, 0.5);
+}
+
+.story-paragraph {
+  position: relative;
+  padding-left: 2.5rem;
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.play-line-button {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 6px 4px 4px 4px;
+  cursor: pointer;
+  color: #FFFFFF;
+  opacity: 0.2;
+  transition: opacity 0.2s, color 0.2s;
+  border-radius: 50%;
+}
+
+.play-line-button:hover {
+  opacity: 1;
+  background-color: rgba(107, 94, 205, 0.1);
+}
+
+.story-paragraph:hover .play-line-button {
+  opacity: 0.9;
 } 

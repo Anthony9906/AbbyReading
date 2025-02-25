@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { School, BookOpenCheck, BrainCircuit } from "lucide-react";
+import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore } from "lucide-react";
 import { supabase } from '../lib/supabase';
 import '../styles/components/LearningCard.css';
 import { VocabPopover } from './VocabPopover';
 import OpenAI from 'openai';
 import { toast } from 'react-hot-toast';
-import { TextSelectionPopover } from './TextSelectionPopover';
 
 interface Unit {
   id: string;
@@ -39,6 +38,12 @@ interface WordSelection {
   noResult: boolean;
 }
 
+interface TextSelection {
+  text: string;
+  position: { x: number; y: number };
+  isPlaying: boolean;
+}
+
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_WILDCARD_API_KEY,
   baseURL: import.meta.env.VITE_OPENAI_WILDCARD_BASE_URL,
@@ -49,11 +54,8 @@ export const LearningCard = () => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [selectedWord, setSelectedWord] = useState<WordSelection | null>(null);
-  const [selectedText, setSelectedText] = useState<{
-    text: string;
-    position: { x: number; y: number };
-    isPlaying: boolean;
-  } | null>(null);
+  const [selectedText, setSelectedText] = useState<TextSelection | null>(null);
+  const [readingSpeed, setReadingSpeed] = useState<'very_slow' | 'slow' | 'normal'>('normal');
 
   useEffect(() => {
     fetchUnits();
@@ -184,10 +186,37 @@ export const LearningCard = () => {
     const paragraphs = text.split('\n');
     
     return paragraphs.map((paragraph, index) => {
+      if (!paragraph.trim()) return null; // 跳过空行
+      
       const matches = [...paragraph.matchAll(regex)];
       let lastIndex = 0;
       const parts = [];
       
+      // 添加朗读图标
+      parts.push(
+        <button
+          key={`play-${index}`}
+          onClick={(e) => {
+            e.stopPropagation(); // 防止触发文本选择
+            setSelectedText({
+              text: paragraph,
+              position: {
+                x: e.currentTarget.getBoundingClientRect().right + 260,
+                y: e.currentTarget.getBoundingClientRect().top,
+              },
+              isPlaying: true
+            });
+            // 直接开始播放
+            handlePlay(paragraph);
+          }}
+          className="play-line-button"
+          title="Read this line"
+        >
+          <MessageCircleMore size={20} />
+        </button>
+      );
+      
+      // 处理段落文本
       for (const match of matches) {
         if (match.index! > lastIndex) {
           parts.push(paragraph.slice(lastIndex, match.index));
@@ -210,41 +239,51 @@ export const LearningCard = () => {
         parts.push(paragraph.slice(lastIndex));
       }
       
-      return <p key={index}>{parts}</p>;
+      return (
+        <p key={index} className="story-paragraph">
+          {parts}
+        </p>
+      );
     });
   };
 
   // 添加点击外部关闭气泡的处理
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // 处理单词气泡框
       if (selectedWord && 
           !((event.target as Element).closest('.vocab-popover') || 
             (event.target as Element).closest('.highlight') ||
             (event.target as Element).closest('.word-tag'))) {
         setSelectedWord(null);
       }
+      
+      // 处理阅读气泡框
+      if (selectedText && 
+          !((event.target as Element).closest('.text-selection-popover') || 
+            (event.target as Element).closest('.play-line-button'))) {
+        setSelectedText(null);
+      }
     };
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [selectedWord]);
+    // 使用 setTimeout 延迟添加事件监听器，确保不会立即触发
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      clearTimeout(timer);
+    };
+  }, [selectedWord, selectedText]);
 
   const handleTextSelection = () => {
     const selection = window.getSelection();
-    console.log('Selection event triggered', selection?.toString());
     
     if (selection && selection.toString().trim()) {
       const text = selection.toString().trim();
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
-      
-      console.log('Setting selected text', {
-        text,
-        position: {
-          x: rect.left + (rect.width / 2),
-          y: rect.top,
-        }
-      });
       
       setSelectedText({
         text,
@@ -257,16 +296,27 @@ export const LearningCard = () => {
     }
   };
 
-  const handlePlay = async () => {
-    if (!selectedText) return;
+  const handlePlay = async (text?: string) => {
+    const textToPlay = text || selectedText?.text;
+    if (!textToPlay) return;
 
-    setSelectedText(prev => prev ? { ...prev, isPlaying: true } : null);
+    if (!text) {
+      setSelectedText(prev => prev ? { ...prev, isPlaying: true } : null);
+    }
 
     try {
+      // 根据选择的速度设置 speed 参数
+      const speed = {
+        'very_slow': 0.5,  // 很慢
+        'slow': 0.75,      // 慢
+        'normal': 1.0      // 正常
+      }[readingSpeed];
+
       const mp3 = await openai.audio.speech.create({
         model: "tts-1",
         voice: "echo",
-        input: selectedText.text,
+        input: textToPlay,
+        speed: speed
       });
 
       const blob = await mp3.blob();
@@ -275,34 +325,24 @@ export const LearningCard = () => {
       
       audio.onended = () => {
         URL.revokeObjectURL(url);
-        setSelectedText(prev => prev ? { ...prev, isPlaying: false } : null);
+        if (!text) {
+          setSelectedText(prev => prev ? { ...prev, isPlaying: false } : null);
+        }
       };
 
       await audio.play();
     } catch (error) {
       console.error('Error with OpenAI TTS:', error);
       toast.error('Failed to play audio. Please try again.');
-      setSelectedText(prev => prev ? { ...prev, isPlaying: false } : null);
+      if (!text) {
+        setSelectedText(prev => prev ? { ...prev, isPlaying: false } : null);
+      }
     }
   };
 
   const handleStop = () => {
-    // 可以在这里添加停止播放的逻辑
     setSelectedText(prev => prev ? { ...prev, isPlaying: false } : null);
   };
-
-  // 添加点击外部关闭气泡的处理
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectedText && 
-          !((event.target as Element).closest('.text-selection-popover'))) {
-        setSelectedText(null);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [selectedText]);
 
   return (
     <div className="learning-card">
@@ -344,7 +384,7 @@ export const LearningCard = () => {
                 'No story available'
               }
             </div>
-            <div className="tag reading">Reading</div>
+            <div className="tag reading">Ask me questions</div>
           </div>
 
           {/* Vocabulary Section */}
@@ -391,20 +431,128 @@ export const LearningCard = () => {
       )}
       
       {selectedText && (
-        <div style={{ position: 'fixed', top: 0, left: 0, background: 'red', padding: '10px', zIndex: 9999 }}>
-          Debug: Text selected
+        <div 
+          className="text-selection-popover"
+          style={{
+            position: 'fixed',
+            left: selectedText.position.x,
+            top: selectedText.position.y,
+            transform: 'translateX(-50%) translateY(-100%)',
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '12px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+            zIndex: 1000,
+            minWidth: '380px',
+          }}
+        >
+          <div style={{ 
+            backgroundColor: '#f5f5f5',
+            padding: '1rem 0',
+            borderRadius: '8px',
+            fontSize: '1.8rem',
+            color: 'rgb(100 92 156)'
+          }}>
+            {selectedText.text}
+          </div>
+          
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginTop: '1rem' 
+          }}>
+            {/* 速度选择按钮组 - 左对齐 */}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {[
+                { id: 'very_slow', label: '0.5' },
+                { id: 'slow', label: '0.75' },
+                { id: 'normal', label: '1' }
+              ].map(speed => (
+                <button
+                  key={speed.id}
+                  onClick={() => setReadingSpeed(speed.id as typeof readingSpeed)}
+                  style={{
+                    padding: '0.4rem 0.8rem',
+                    border: '1px solid #6B5ECD',
+                    borderRadius: '4px',
+                    background: readingSpeed === speed.id ? '#6B5ECD' : 'white',
+                    color: readingSpeed === speed.id ? 'white' : '#6B5ECD',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {speed.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 播放/停止按钮 - 右对齐 */}
+            {selectedText.isPlaying ? (
+              <button 
+                onClick={handleStop}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.6rem 1.2rem',
+                  background: '#6B5ECD',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: '500',
+                }}
+              >
+                <Square size={18} />
+                <span>Stop</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => handlePlay()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.6rem 1.2rem',
+                  background: '#6B5ECD',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: '500',
+                }}
+              >
+                <Play size={18} />
+                <span>Play</span>
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={() => setSelectedText(null)}
+            style={{
+              position: 'absolute',
+              top: '0.75rem',
+              right: '0.75rem',
+              width: '24px',
+              height: '24px',
+              border: 'none',
+              background: 'none',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#666',
+            }}
+          >
+            ×
+          </button>
         </div>
-      )}
-      
-      {selectedText && (
-        <TextSelectionPopover
-          text={selectedText.text}
-          position={selectedText.position}
-          isPlaying={selectedText.isPlaying}
-          onClose={() => setSelectedText(null)}
-          onPlay={handlePlay}
-          onStop={handleStop}
-        />
       )}
     </div>
   );

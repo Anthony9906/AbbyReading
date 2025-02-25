@@ -4,8 +4,8 @@
   border-radius: 1rem;
   padding: 1.5rem;
   min-width: 280px;
-  max-width: 320px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 380px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
   z-index: 1000;
   transform: translateY(-100%) translateX(-50%);
   margin-top: -1rem;
@@ -31,7 +31,7 @@
 }
 
 .vocab-word {
-  font-size: 1.25rem;
+  font-size: 2rem;
   font-weight: 600;
   color: #6B5ECD;
   margin: 0;
@@ -69,14 +69,15 @@
 }
 
 .example-english {
-  color: #333;
+  color: #795dbe;
   margin: 0 0 0.25rem;
   font-style: italic;
 }
 
 .example-chinese {
-  color: #666;
+  color: #795dbe;
   margin: 0;
+  font-style: italic;
 }
 
 .close-button {
