@@ -22,6 +22,9 @@ interface Unit {
   story?: {
     content: string;
   } | null;
+  weekly_report?: {
+    original_text: string;
+  } | null;
 }
 
 export default function Units() {
@@ -44,6 +47,9 @@ export default function Units() {
           stories (
             content,
             type
+          ),
+          weekly_report (
+            original_text
           )
         `)
         .eq('user_id', user?.id)
@@ -51,13 +57,14 @@ export default function Units() {
 
       if (error) throw error;
 
-      // 处理数据，找到每个 unit 的 inclass 类型故事
-      const unitsWithStory = data?.map(unit => ({
+      // 处理数据，找到每个 unit 的 inclass 类型故事和周报
+      const unitsWithData = data?.map(unit => ({
         ...unit,
-        story: unit.stories?.find((story: { type: string }) => story.type === 'inclass') || null
+        story: unit.stories?.find((story: { type: string }) => story.type === 'inclass') || null,
+        weekly_report: unit.weekly_report?.[0] || null
       }));
 
-      setUnits(unitsWithStory || []);
+      setUnits(unitsWithData || []);
     } catch (error) {
       console.error('Error fetching units:', error);
     }
@@ -178,7 +185,7 @@ export default function Units() {
                             <FileImage className="placeholder-icon" />
                           )}
                         </div>
-                        <div className="preview-box">
+                        <div className={`preview-box ${unit.weekly_report ? 'has-story' : ''}`}>
                           {unit.report_file ? (
                             unit.report_file.toLowerCase().endsWith('.pdf') ? (
                               <PDFPreview 
@@ -187,6 +194,7 @@ export default function Units() {
                                 unitId={unit.id}
                                 unitTitle={unit.title}
                                 containerStyle="small"
+                                existingStory={unit.weekly_report?.original_text}
                                 fileType="report"
                               />
                             ) : (

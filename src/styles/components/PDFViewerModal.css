@@ -90,9 +90,8 @@
 }
 
 .loading-spinner {
-  width: 2rem;
-  height: 2rem;
-  color: #6B5ECD;
+  width: 16px;
+  height: 16px;
   animation: spin 1s linear infinite;
 }
 
@@ -158,6 +157,10 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 } 

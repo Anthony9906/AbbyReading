@@ -135,12 +135,85 @@ export const PDFViewerModal = ({
     return cleanedJson;
   };
 
+  const saveVocabularyAndGrammar = async (parsedResult: any) => {
+    try {
+      // 先删除该单元已有的单词和语法记录
+      const { error: deleteVocabError } = await supabase
+        .from('vocabulary')
+        .delete()
+        .eq('unit_id', unitId);
+
+      if (deleteVocabError) throw deleteVocabError;
+
+      const { error: deleteGrammarError } = await supabase
+        .from('grammar')
+        .delete()
+        .eq('unit_id', unitId);
+
+      if (deleteGrammarError) throw deleteGrammarError;
+
+      // 保存单词 - 兼容大小写
+      const vocabularyArray = parsedResult.Vocabulary || parsedResult.vocabulary;
+      if (vocabularyArray?.length > 0) {
+        const vocabularyData = vocabularyArray.map((vocab: any) => ({
+          unit_id: unitId,
+          word: vocab.word,
+          part_of_speech: vocab.part_of_speech,
+          phonetic: vocab.phonetic,
+          english_definition: vocab.english_definition,
+          chinese_definition: vocab.chinese_definition,
+          english_example: vocab.english_example,
+          chinese_example: vocab.chinese_example,
+          created_at: new Date().toISOString()
+        }));
+
+        const { error: insertVocabError } = await supabase
+          .from('vocabulary')
+          .insert(vocabularyData);
+
+        if (insertVocabError) {
+          console.error('Vocabulary Insert Error:', insertVocabError);
+          throw insertVocabError;
+        }
+      }
+
+      // 保存语法 - 兼容大小写
+      const grammarArray = parsedResult.Grammar || parsedResult.grammar;
+      if (grammarArray?.length > 0) {
+        const grammarData = grammarArray.map((gram: any) => ({
+          unit_id: unitId,
+          grammar_point: gram.grammar_point || gram.grammarPoint,
+          explanation: gram.explanation,
+          example: gram.example,
+          exercise: gram.exercise,
+          solution: gram.solution,
+          summary: gram.summary,
+          created_at: new Date().toISOString()
+        }));
+
+        const { error: insertGrammarError } = await supabase
+          .from('grammar')
+          .insert(grammarData);
+
+        if (insertGrammarError) {
+          console.error('Grammar Insert Error:', insertGrammarError);
+          throw insertGrammarError;
+        }
+      }
+
+      console.log('Successfully saved vocabulary and grammar');
+    } catch (error) {
+      console.error('保存单词和语法时出错:', error);
+      throw error;
+    }
+  };
+
   const handleSaveReport = async () => {
     setIsSaving(true);
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
       
-      const prompt = `请为这段文本中Vocabulary中的每一个英语单词添加解析，解析的内容包括单词、单词属性、单词音标、英文释义、中文释义、英文例句、英文例句的中文翻译。然后分析Grammar中的语法知识点描述内容，提供必要的语法学习要点和技巧的补充，请将你对单词和语法的分析结果以JSON的格式返回，注意单词的每一个信息都要分开，语法部分将原始内容和建议内容分开即可，对JSON中包含的特殊字符进行处理，以便我能正常解析。`;
+      const prompt = `请为这段文本中Vocabulary中的每一个英语单词添加解析，解析的内容包括word、part_of_speech、phonetic、english_definition、chinese_definition、english_example、chinese_example。然后分析Grammar中的语法知识点内容，提供必要的语法解析和学习技巧的补充，并且适合小学生理解，提供例句和练习，帮我按grammar_original_text、grammar_point、explanation、example、exercise、solution、summary的顺序组织内容，请将你对单词和语法的分析结果以JSON的格式返回，注意单词的每一个信息都要分开，语法部分按顺序将每个语法知识点分开即可，对JSON中包含的特殊字符进行处理，以便我能正常解析。`;
 
       const result = await model.generateContent([
         prompt,
@@ -151,12 +224,59 @@ export const PDFViewerModal = ({
       const analysisResult = response.text();
       
       try {
-        // 清理并解析 JSON
         const cleanedJson = cleanJsonString(analysisResult);
         const parsedResult = JSON.parse(cleanedJson);
-        console.log('AI Analysis Result:', parsedResult);
+
+        // 保存周报
+        const { data: existingReport, error: checkError } = await supabase
+          .from('weekly_report')
+          .select('id')
+          .eq('unit_id', unitId)
+          .single();
+
+        if (checkError && checkError.code !== 'PGRST116') {
+          throw checkError;
+        }
+
+        if (existingReport) {
+          const confirmed = window.confirm(
+            '这个单元已经有一个周报了，是否要替换它？'
+          );
+
+          if (!confirmed) {
+            setIsSaving(false);
+            return;
+          }
+
+          const { error: updateError } = await supabase
+            .from('weekly_report')
+            .update({
+              content: parsedResult,
+              original_text: pdfText,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingReport.id);
+
+          if (updateError) throw updateError;
+        } else {
+          const { error: insertError } = await supabase
+            .from('weekly_report')
+            .insert([{
+              unit_id: unitId,
+              unit_title: unitTitle,
+              content: parsedResult,
+              original_text: pdfText,
+              created_at: new Date().toISOString()
+            }]);
+
+          if (insertError) throw insertError;
+        }
+
+        // 保存单词和语法
+        await saveVocabularyAndGrammar(parsedResult);
         
-        toast.success('作业分析完成！');
+        toast.success('周报保存成功！');
+        onClose();
       } catch (parseError) {
         console.error('Raw AI response:', analysisResult);
         console.error('Failed to parse AI response:', parseError);
@@ -263,7 +383,7 @@ export const PDFViewerModal = ({
             >
               <FileText className="control-icon" />
               <span className="button-text">
-                {fileType === 'reading' ? '识别课文' : '识别作业'}
+                {fileType === 'reading' ? 'AI 识别课文' : 'AI 识别作业'}
               </span>
             </button>
             {isTextVisible && (
@@ -274,8 +394,9 @@ export const PDFViewerModal = ({
               >
                 <Save className="control-icon" />
                 <span className="button-text">
-                  {isSaving ? '保存中...' : (fileType === 'reading' ? '保存故事' : '保存作业')}
+                  {fileType === 'reading' ? '保存故事' : '保存作业'}
                 </span>
+                {isSaving && <Loader2 className="loading-spinner" />}
               </button>
             )}
           </div>
