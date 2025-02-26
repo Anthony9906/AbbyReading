@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore } from "lucide-react";
+import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award } from "lucide-react";
 import { supabase } from '../lib/supabase';
 import '../styles/components/LearningCard.css';
 import { VocabPopover } from './VocabPopover';
@@ -210,7 +210,10 @@ export const LearningCard = () => {
     const paragraphs = text.split('\n');
     
     return paragraphs.map((paragraph, index) => {
-      if (!paragraph.trim()) return null; // 跳过空行
+      // 对于空行，返回一个空的段落元素
+      if (!paragraph.trim()) {
+        return <p key={index} className="story-paragraph empty-line">&nbsp;</p>;
+      }
       
       const matches = [...paragraph.matchAll(regex)];
       let lastIndex = 0;
@@ -221,7 +224,7 @@ export const LearningCard = () => {
         <button
           key={`play-${index}`}
           onClick={(e) => {
-            e.stopPropagation(); // 防止触发文本选择
+            e.stopPropagation();
             setSelectedText({
               text: paragraph,
               position: {
@@ -230,7 +233,6 @@ export const LearningCard = () => {
               },
               isPlaying: true
             });
-            // 直接开始播放
             handlePlay(paragraph);
           }}
           className="play-line-button"
@@ -445,45 +447,86 @@ export const LearningCard = () => {
                   {/* Grammar Section - Slide 2 */}
                   <div className={`slide ${activeSlide === 1 ? 'active' : ''}`}>
                     <div className="grammar-section">
-                      {selectedUnit?.grammar?.map((item, index) => (
-                        <div key={item.id} className="grammar-item">
-                          <div className="grammar-original">
-                            <h3>Original Text</h3>
-                            <p>{item.grammar_original_text}</p>
-                          </div>
-                          
-                          <div className="grammar-point">
-                            <h3>Grammar Point</h3>
-                            <p>{item.grammar_point}</p>
-                          </div>
+                      <div className="grammar-content">
+                        {selectedUnit?.grammar?.map((item) => (
+                          <div key={item.id} className="grammar-item">
+                            <div className="grammar-original">
+                              <div className="section-header">
+                                <Quote size={34} />
+                                <h2>Grammar Point</h2>
+                              </div>
+                              <p>{item.grammar_original_text}</p>
+                            </div>
+                            
+                            <div className="grammar-point">
+                              <div className="section-header">
+                                <Award size={20} />
+                                <h3>Title</h3>
+                              </div>
+                              <p>{item.grammar_point}</p>
+                            </div>
 
-                          <div className="grammar-explanation">
-                            <h3>Explanation</h3>
-                            <p>{item.explanation}</p>
-                          </div>
+                            <div className="grammar-explanation">
+                              <div className="section-header">
+                                <MessageSquareQuote size={20} />
+                                <h3>Explanation</h3>
+                              </div>
+                              <p>{item.explanation}</p>
+                            </div>
 
-                          <div className="grammar-example">
-                            <h3>Example</h3>
-                            <p>{item.example}</p>
-                          </div>
+                            <div className="grammar-example">
+                              <div className="section-header">
+                                <ListChecks size={20} />
+                                <h3>Examples</h3>
+                              </div>
+                              <div className="example-list">
+                                {item.example
+                                  .replace(/[\[\]]/g, '')  // 移除方括号
+                                  .split(/,(?!\s)|，/)     // 只在逗号后面不是空格的地方分割
+                                  .map((example, i) => (
+                                    <div key={i} className="example-item">
+                                      {example.trim().replace(/['"]/g, '')}
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
 
-                          <div className="grammar-exercise">
-                            <h3>Exercise</h3>
-                            <p>{item.exercise}</p>
-                            <div className="solution">
-                              <h4>Solution</h4>
-                              <p>{item.solution}</p>
+                            <div className="grammar-exercise">
+                              <div className="section-header">
+                                <Pencil size={20} />
+                                <h3>Exercises</h3>
+                              </div>
+                              <div className="exercise-list">
+                                {item.exercise
+                                  .replace(/[\[\]]/g, '')  // 移除方括号
+                                  .split(/,(?!\s)|，/)     // 只在逗号后面不是空格的地方分割
+                                  .map((exercise, i) => (
+                                    <div key={i} className="exercise-item">
+                                      {exercise.trim().replace(/['"]/g, '')}
+                                    </div>
+                                  ))}
+                              </div>
+                              <div className="solution">
+                                <div className="section-header">
+                                  <CheckCircle2 size={20} />
+                                  <h4>Solution</h4>
+                                </div>
+                                <p>{item.solution}</p>
+                              </div>
+                            </div>
+
+                            <div className="grammar-summary">
+                              <div className="section-header">
+                                <ListChecks size={20} />
+                                <h3>Summary</h3>
+                              </div>
+                              <p>{item.summary}</p>
                             </div>
                           </div>
-
-                          <div className="grammar-summary">
-                            <h3>Summary</h3>
-                            <p>{item.summary}</p>
-                          </div>
-                        </div>
-                      )) || (
-                        <p className="no-content">No grammar points available</p>
-                      )}
+                        )) || (
+                          <p className="no-content">No grammar points available</p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
