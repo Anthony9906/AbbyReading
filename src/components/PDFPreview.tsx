@@ -16,6 +16,9 @@ interface PDFPreviewProps {
   containerStyle?: 'small' | 'large';
   existingStory?: string;
   fileType: 'reading' | 'report';
+  onCustomClick?: () => void;
+  width?: number;
+  height?: number;
 }
 
 export const PDFPreview = ({ 
@@ -25,15 +28,35 @@ export const PDFPreview = ({
   unitId, 
   unitTitle,
   existingStory,
-  fileType
+  fileType,
+  onCustomClick,
+  width,
+  height
 }: PDFPreviewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleClick = () => {
+    if (onCustomClick) {
+      onCustomClick();
+    } else {
+      setIsModalOpen(true);
+    }
+  };
+
+  const getDefaultWidth = () => {
+    if (width) return width;
+    return containerStyle === 'small' ? 98 : 354;
+  };
 
   return (
     <>
       <div 
         className={`pdf-preview ${containerStyle} ${className || ''}`}
-        onClick={() => setIsModalOpen(true)}
+        onClick={handleClick}
+        style={{
+          width: width ? `${width}px` : undefined,
+          height: height ? `${height}px` : undefined
+        }}
       >
         <Document
           file={url}
@@ -45,7 +68,8 @@ export const PDFPreview = ({
         >
           <Page
             pageNumber={1}
-            width={containerStyle === 'small' ? 98 : 354}
+            width={getDefaultWidth()}
+            height={height}
             renderTextLayer={false}
             renderAnnotationLayer={false}
             className="pdf-page"
@@ -53,15 +77,17 @@ export const PDFPreview = ({
         </Document>
       </div>
 
-      <PDFViewerModal
-        url={url}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        unitId={unitId}
-        unitTitle={unitTitle}
-        existingStory={existingStory}
-        fileType={fileType}
-      />
+      {!onCustomClick && (
+        <PDFViewerModal
+          url={url}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          unitId={unitId}
+          unitTitle={unitTitle}
+          existingStory={existingStory}
+          fileType={fileType}
+        />
+      )}
     </>
   );
 }; 

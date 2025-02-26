@@ -163,11 +163,55 @@
 }
 
 .reading-section {
-  background: rgba(107, 94, 205, 0.8);
-  border-radius: 1.5rem;
-  padding: 2rem;
-  transition: all 0.3s ease;
-  margin-bottom: 1rem;
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.reading-preview {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+}
+
+.reading-preview .preview-box {
+  width: 100px;
+  height: 100px;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  border: 4px solid #b7b0e4;
+}
+
+.reading-preview .preview-box:hover {
+  transform: scale(1.05);
+}
+
+.reading-pdf-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.pdf-page {
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.reading-pdf-overlay .pdf-page canvas {
+  border-radius: 4px;
 }
 
 .story-paragraph {

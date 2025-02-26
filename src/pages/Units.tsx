@@ -172,6 +172,8 @@ export default function Units() {
                                   containerStyle="small"
                                   existingStory={unit.story?.content}
                                   fileType="reading"
+                                  width={100}
+                                  height={100}
                                 />
                               ) : (
                                 <img 
@@ -196,6 +198,8 @@ export default function Units() {
                                 containerStyle="small"
                                 existingStory={unit.weekly_report?.original_text}
                                 fileType="report"
+                                width={100}
+                                height={100}
                               />
                             ) : (
                               <img 

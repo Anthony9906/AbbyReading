@@ -7,6 +7,8 @@ import '../styles/components/LearningCard.css';
 import { VocabPopover } from './VocabPopover';
 import OpenAI from 'openai';
 import { toast } from 'react-hot-toast';
+import { PDFPreview } from './PDFPreview';
+import { ReadingPDFViewer } from './ReadingPDFViewer';
 
 interface GrammarPoint {
   id: string;
@@ -30,6 +32,7 @@ interface Unit {
     chinese_definition: string;
   }>;
   grammar?: Array<GrammarPoint>;
+  reading_file?: string;
 }
 
 interface VocabWord {
@@ -62,6 +65,15 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true // 允许在浏览器中使用
 });
 
+// 添加 getFileUrl 函数
+const getFileUrl = (path: string | null) => {
+  if (!path) return null;
+  const { data } = supabase.storage
+    .from('unit-files')
+    .getPublicUrl(path);
+  return data?.publicUrl;
+};
+
 export const LearningCard = () => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
@@ -69,6 +81,7 @@ export const LearningCard = () => {
   const [selectedText, setSelectedText] = useState<TextSelection | null>(null);
   const [readingSpeed, setReadingSpeed] = useState<'very_slow' | 'slow' | 'normal'>('normal');
   const [activeSlide, setActiveSlide] = useState(0);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
 
   useEffect(() => {
     fetchUnits();
@@ -83,6 +96,7 @@ export const LearningCard = () => {
         .select(`
           id,
           title,
+          reading_file,
           stories (
             content,
             type
@@ -428,7 +442,28 @@ export const LearningCard = () => {
                 <div className="slides" >
                   {/* Reading Section - Slide 1 */}
                   <div className={`slide ${activeSlide === 0 ? 'active' : ''}`}>
-                    <div className="reading-section">
+                    <div className="reading-section" style={{ position: 'relative' }}>
+                      {selectedUnit?.reading_file && (
+                        <div className="reading-preview" style={{
+                          position: 'absolute',
+                          top: '20px',
+                          right: '20px',
+                          zIndex: 10
+                        }}>
+                          <PDFPreview
+                            url={getFileUrl(selectedUnit.reading_file)!}
+                            unitId={selectedUnit.id}
+                            unitTitle={selectedUnit.title}
+                            containerStyle="small"
+                            fileType="reading"
+                            className="preview-box clickable"
+                            existingStory={selectedUnit.story?.content}
+                            onCustomClick={() => setShowPDFViewer(true)}
+                            width={220}
+                            height={180}
+                          />
+                        </div>
+                      )}
                       <div 
                         className="story-text"
                         onMouseUp={handleTextSelection}
@@ -441,6 +476,15 @@ export const LearningCard = () => {
                         'No story available'
                       }
                       </div>
+
+                      {/* Move PDF Viewer inside reading-section */}
+                      {showPDFViewer && selectedUnit?.reading_file && (
+                        <ReadingPDFViewer
+                          url={getFileUrl(selectedUnit.reading_file)!}
+                          isOpen={showPDFViewer}
+                          onClose={() => setShowPDFViewer(false)}
+                        />
+                      )}
                     </div>
                   </div>
 
