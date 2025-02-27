@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { LogOut, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import confetti from 'canvas-confetti';
 
 export const StatsCard = () => {
   const navigate = useNavigate();
@@ -19,6 +20,9 @@ export const StatsCard = () => {
     const fetchUnicornCount = async () => {
       try {
         setLoading(true);
+        if (loading) {
+          
+        }
         
         // 获取当前用户
         const { data: userData } = await supabase.auth.getUser();
@@ -62,12 +66,32 @@ export const StatsCard = () => {
   // 计算应该显示多少个礼物图标
   const giftCount = Math.floor(unicornCount / 1);
   
-  // 处理礼物图标点击
+  // 处理礼物图标点击，添加礼花效果
   const handleGiftClick = (index: number) => {
     if (!claimedGifts.includes(index)) {
       setActiveGiftIndex(index);
       setShowGiftPopup(true);
+      
+      // 延迟一点时间后触发礼花效果，等弹窗显示出来
+      setTimeout(() => {
+        triggerConfetti();
+      }, 300);
     }
+  };
+  
+  // 触发礼花效果
+  const triggerConfetti = () => {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      gravity: 0.5,
+      scalar: 1.4,
+      shapes: ['circle', 'square', 'star'],
+      ticks: 500,
+      colors: ['#d3648b', '#f3cb6f', '#6b5ecd', '#418443', '#9335b9', '#da802c' ],
+      zIndex: 2000 // 设置更高的 z-index 确保显示在弹窗前面
+    });
   };
   
   // 处理礼物领取
@@ -178,34 +202,50 @@ export const StatsCard = () => {
         {showGiftPopup && (
           <div className="gift-popup-overlay" onClick={() => setShowGiftPopup(false)}>
             <div className="gift-popup" onClick={e => e.stopPropagation()}>
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="48" 
-              height="48" 
-              viewBox="0 0 32 32" 
-              fill="none" 
-              stroke="#8d4bb9" 
-              strokeWidth="1.5" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="lucide lucide-unicorn-head"
-              >
-                <path d="m15.6 4.8 2.7 2.3"/>
-                <path d="M15.5 10S19 7 22 2c-6 2-10 5-10 5"/>
-                <path d="M11.5 12H11"/>
-                <path d="M5 15a4 4 0 0 0 4 4h7.8l.3.3a3 3 0 0 0 4-4.46L12 7c0-3-1-5-1-5S8 3 8 7c-4 1-6 3-6 3"/>
-                <path d="M2 4.5C4 3 6 3 6 3l2 4"/>
-                <path d="M6.14 17.8S4 19 2 22"/>
-              </svg>
-              <Gift size={48} color='#8d4bb9' width={48} height={48} viewBox='0 0 32 32' strokeWidth={1.5} />
-              <h3>🎉 Congratulations! 🎉</h3>
-              <p>You have a Gift Award for your performance, ask mom for it!</p>
+              <div className="gift-icons-container">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="48" 
+                  height="48" 
+                  viewBox="0 0 32 32" 
+                  fill="none" 
+                  stroke="#8d4bb9" 
+                  strokeWidth="1.5" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  className="lucide lucide-unicorn-head animate-float"
+                >
+                  <path d="m15.6 4.8 2.7 2.3"/>
+                  <path d="M15.5 10S19 7 22 2c-6 2-10 5-10 5"/>
+                  <path d="M11.5 12H11"/>
+                  <path d="M5 15a4 4 0 0 0 4 4h7.8l.3.3a3 3 0 0 0 4-4.46L12 7c0-3-1-5-1-5S8 3 8 7c-4 1-6 3-6 3"/>
+                  <path d="M2 4.5C4 3 6 3 6 3l2 4"/>
+                  <path d="M6.14 17.8S4 19 2 22"/>
+                </svg>
+                <Gift 
+                  size={48} 
+                  color='#8d4bb9' 
+                  strokeWidth={1.5} 
+                  className="animate-bounce"
+                />
+              </div>
+              <h3 className="celebration-title">🎉 Congratulations! 🎉</h3>
+              <p>You have a Gift Award for your quiz performances, go ask mom for your gift!</p>
               <button 
                 className="claim-gift-button"
                 onClick={handleClaimGift}
               >
                 Ask Mom for it
               </button>
+              
+              {/* 添加星星装饰 */}
+              <div className="stars-decoration">
+                <div className="star star1"></div>
+                <div className="star star2"></div>
+                <div className="star star3"></div>
+                <div className="star star4"></div>
+                <div className="star star5"></div>
+              </div>
             </div>
           </div>
         )}

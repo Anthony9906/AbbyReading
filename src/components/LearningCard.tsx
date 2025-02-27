@@ -62,6 +62,12 @@ interface TextSelection {
   isPlaying: boolean;
 }
 
+interface QuizStats {
+  totalQuizzes: number;
+  totalSubmissions: number;
+  accuracyRate: number;
+}
+
 const openai_tts = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_WILDCARD_API_KEY,
   baseURL: import.meta.env.VITE_OPENAI_WILDCARD_BASE_URL,
@@ -89,10 +95,10 @@ export const LearningCard = () => {
   const [readingUnicorns, setReadingUnicorns] = useState(0);
   const [grammarUnicorns, setGrammarUnicorns] = useState(0);
   const [storyUnicorns, setStoryUnicorns] = useState(0);
-  const [loadingUnicorns, setLoadingUnicorns] = useState(false);
-  const [quizStats, setQuizStats] = useState({
+  const [quizStats, setQuizStats] = useState<QuizStats>({
     totalQuizzes: 0,
-    totalSubmissions: 0
+    totalSubmissions: 0,
+    accuracyRate: 0
   });
 
   useEffect(() => {
@@ -403,7 +409,6 @@ export const LearningCard = () => {
       if (!selectedUnit) return;
       
       try {
-        setLoadingUnicorns(true);
         
         // 获取当前用户
         const { data: userData } = await supabase.auth.getUser();
@@ -447,7 +452,7 @@ export const LearningCard = () => {
       } catch (error) {
         console.error('Error fetching unicorn counts:', error);
       } finally {
-        setLoadingUnicorns(false);
+
       }
     };
     
@@ -468,32 +473,45 @@ export const LearningCard = () => {
   useEffect(() => {
     const fetchQuizStats = async () => {
       if (!selectedUnit) return;
-      
       try {
         // 获取当前用户
         const { data: userData } = await supabase.auth.getUser();
         if (!userData?.user) return;
         
-        // 获取本单元已生成的 quiz 总数
+        // 获取本单元 in-class-reading 类型的唯一 quiz_id 总数
         const { data: quizData, error: quizError } = await supabase
-          .from('reading_quiz')
-          .select('id')
-          .eq('unit_id', selectedUnit.id);
-          
-        if (quizError) throw quizError;
+        .from('reading_quiz')
+        .select('quiz_id')
+        .eq('unit_id', selectedUnit.id)
+        .eq('type', 'in_class_reading');
         
-        // 获取本单元的提交总次数
+        if (quizError) throw quizError;
+        // 提取唯一的 quiz_id 列表
+        const uniqueQuizIds = [...new Set(quizData.map(item => item.quiz_id))];
+        
+        // 获取这些 quiz 的提交记录，包括正确性
         const { data: submissionData, error: submissionError } = await supabase
           .from('reading_quiz_records')
-          .select('id')
-          .eq('unit_id', selectedUnit.id);
+          .select('quiz_id, is_correct')
+          .in('quiz_id', uniqueQuizIds);
           
         if (submissionError) throw submissionError;
         
+        // 提取唯一的提交 quiz_id 列表（每个 quiz 只计算一次提交）
+        const uniqueSubmissionQuizIds = [...new Set(submissionData.map(item => item.quiz_id))];
+        
+        // 计算正确率
+        const totalSubmissions = submissionData.length;
+        const correctSubmissions = submissionData.filter(item => item.is_correct).length;
+        const accuracyRate = totalSubmissions > 0 
+          ? Math.round((correctSubmissions / totalSubmissions) * 100) 
+          : 0;
+        
         // 设置 quiz 统计数据
         setQuizStats({
-          totalQuizzes: quizData.length,
-          totalSubmissions: submissionData.length
+          totalQuizzes: uniqueQuizIds.length,
+          totalSubmissions: uniqueSubmissionQuizIds.length,
+          accuracyRate: accuracyRate
         });
         
       } catch (error) {
@@ -617,7 +635,23 @@ export const LearningCard = () => {
                             onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
                             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-unicorn-head"><path d="m15.6 4.8 2.7 2.3"/><path d="M15.5 10S19 7 22 2c-6 2-10 5-10 5"/><path d="M11.5 12H11"/><path d="M5 15a4 4 0 0 0 4 4h7.8l.3.3a3 3 0 0 0 4-4.46L12 7c0-3-1-5-1-5S8 3 8 7c-4 1-6 3-6 3"/><path d="M2 4.5C4 3 6 3 6 3l2 4"/><path d="M6.14 17.8S4 19 2 22"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" 
+                                width="24" 
+                                height="24" 
+                                viewBox="0 0 24 24" 
+                                fill="none" 
+                                stroke="#FFFFFF" 
+                                strokeWidth="1.5" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                                className="lucide lucide-unicorn-head">
+                                  <path d="m15.6 4.8 2.7 2.3"/>
+                                  <path d="M15.5 10S19 7 22 2c-6 2-10 5-10 5"/>
+                                  <path d="M11.5 12H11"/>
+                                  <path d="M5 15a4 4 0 0 0 4 4h7.8l.3.3a3 3 0 0 0 4-4.46L12 7c0-3-1-5-1-5S8 3 8 7c-4 1-6 3-6 3"/>
+                                  <path d="M2 4.5C4 3 6 3 6 3l2 4"/>
+                                  <path d="M6.14 17.8S4 19 2 22"/>
+                              </svg>
                             Reading Quiz
                           </button>
                           
@@ -630,6 +664,10 @@ export const LearningCard = () => {
                             <div className="quiz-stat-item">
                               <span className="quiz-stat-label">Submissions:</span>
                               <span className="quiz-stat-value">{quizStats.totalSubmissions}</span>
+                            </div>
+                            <div className="quiz-stat-item">
+                              <span className="quiz-stat-label">Accuracy:</span>
+                              <span className="quiz-stat-value">{quizStats.accuracyRate}%</span>
                             </div>
                           </div>
                         </div>

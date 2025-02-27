@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, X, CheckCircle, XCircle, Send, RefreshCw, RotateCcw, Zap, Bug } from 'lucide-react';
+import { Loader2, X, CheckCircle, XCircle, Send, RefreshCw, RotateCcw, Bug } from 'lucide-react';
 import OpenAI from 'openai';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';

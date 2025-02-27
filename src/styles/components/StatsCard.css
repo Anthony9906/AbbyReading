@@ -305,4 +305,84 @@
 
 .claim-gift-button:hover {
   background-color: #5a4eb8;
+}
+
+/* 添加礼花动画效果相关样式 */
+
+/* 图标容器 */
+.gift-icons-container {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* 浮动动画 */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* 弹跳动画 */
+.animate-bounce {
+  animation: bounce 2s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+/* 庆祝标题 */
+.celebration-title {
+  animation: scale 1s ease-in-out;
+  color: #e83e8c;
+  margin-top: 0;
+  font-size: 24px;
+}
+
+@keyframes scale {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* 星星装饰 */
+.stars-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.star {
+  position: absolute;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23FFD700' stroke='%23FFD700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'%3E%3C/polygon%3E%3C/svg%3E");
+  background-size: contain;
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+}
+
+.star1 {
+  top: 10%;
+  left: 10%;
+  animation: twinkle 3s ease-in-out infinite 0.3s;
+}
+
+.star2 {
+  top: 20%;
+  left: 20%;
+  animation: twinkle 3s ease-in-out infinite 0.6s;
+}
+
+.star3 {
+  top: 30%;
 } 
