@@ -971,6 +971,28 @@ export const LearningCard = () => {
           storyId={selectedUnit.story?.id}
         />
       )}
+
+      {/* Grammar Quiz Modal */}
+      {showGrammarQuiz && selectedGrammarPoint && (
+        <GrammarQuizModal
+          isOpen={showGrammarQuiz}
+          onClose={() => setShowGrammarQuiz(false)}
+          unitId={selectedUnit?.id || ''}
+          unitTitle={selectedUnit?.title || ''}
+          grammarPoint={selectedGrammarPoint}
+        />
+      )}
+
+      {/* Grammar Quiz Modal */}
+      {showGrammarQuiz && selectedGrammarPoint && (
+        <GrammarQuizModal
+          isOpen={showGrammarQuiz}
+          onClose={() => setShowGrammarQuiz(false)}
+          unitId={selectedUnit?.id || ''}
+          unitTitle={selectedUnit?.title || ''}
+          grammarPoint={selectedGrammarPoint}
+        />
+      )}
     </div>
   );
 };
