@@ -150,7 +150,7 @@ export const ReadingQuizModal = ({ isOpen, onClose, storyContent, unitId, storyI
       `;
       
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         messages: [
           { role: "system", content: "You are a helpful assistant that creates reading comprehension quizzes." },
           { role: "user", content: prompt }
@@ -189,9 +189,13 @@ export const ReadingQuizModal = ({ isOpen, onClose, storyContent, unitId, storyI
         } else {
           throw new Error("Invalid quiz format");
         }
+
+        setQuizGenerated(true);
+        setIsLoading(false);
       } catch (error) {
         console.error("Error parsing quiz data:", error);
         toast.error("Failed to generate quiz. Please try again.");
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Error generating quiz:', error);
