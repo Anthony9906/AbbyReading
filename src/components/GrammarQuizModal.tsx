@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import '../styles/components/QuizModal.css';
 import { supabase } from '../lib/supabase';
-import { X, Loader2, CheckCircle, XCircle, Bug } from 'lucide-react';
+import { X, Loader2, CheckCircle, XCircle, Bug, HeartHandshake } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'react-hot-toast';
 import OpenAI from 'openai';
+import confetti from 'canvas-confetti';
 
 // 初始化 OpenAI 客户端
 const openai = new OpenAI({
@@ -294,18 +295,20 @@ export const GrammarQuizModal = ({
     if (newScore === questions.length) {
       createUnicornRecord(newScore);
       
-      // 播放庆祝动画
+      // 如果全部答对，触发庆祝动画
       setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          import('canvas-confetti').then(confetti => {
-            confetti.default({
-              particleCount: 100,
-              spread: 70,
-              origin: { y: 0.6 }
-            });
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            gravity: 0.5,
+            scalar: 1.4,
+            shapes: ['circle', 'square', 'star'],
+            ticks: 500,
+            colors: ['#d3648b', '#f3cb6f', '#6b5ecd', '#418443', '#9335b9', '#da802c' ],
+            zIndex: 2000 // 设置更高的 z-index 确保显示在弹窗前面
           });
-        }
-      }, 500);
+        }, 500);
     }
     
     // 滚动到顶部
@@ -342,10 +345,18 @@ export const GrammarQuizModal = ({
   };
   
   const handleRestartQuiz = () => {
-    setSelectedOptions({});
     setShowResults(false);
-    setScore(0);
-    generateQuiz();
+    setSelectedOptions({});
+    // 不重新生成问题，只是重置状态
+  };
+  
+  const handleGenerateNewQuiz = () => {
+    setShowResults(false);
+    setSelectedOptions({});
+    setQuizQuestions([]);
+    setGenerating(false);
+    setQuizGenerated(false);
+    // 这将触发 useEffect 重新生成新的测验
   };
   
   if (!isOpen) return null;
@@ -356,15 +367,18 @@ export const GrammarQuizModal = ({
         <div className="quiz-modal-header">
           <h2>Grammar Quiz: {grammarPoint.title}</h2>
           <button className="close-button" onClick={onClose}>
-            <X size={24} />
+            <X size={24} color="white" />
           </button>
         </div>
         
         <div className="quiz-modal-content" ref={modalContentRef}>
           {isLoading ? (
-            <div className="loading-container">
-              <Loader2 size={40} className="spinner" />
-              <p>Loading quiz...</p>
+            <div className="quiz-questions-header">
+                <div className="quiz-questions-header">
+                    <HeartHandshake className="not-perfect-score" size={65} />
+                </div>
+            <Loader2 className="loading-spinner" />
+            <p>Generating quiz...</p>
             </div>
           ) : generating ? (
             <div className="loading-container">
@@ -375,25 +389,23 @@ export const GrammarQuizModal = ({
           ) : showResults ? (
             <div className="quiz-results">
               {score === questions.length && (
-                <div className="unicorn-celebration">
-                  <div className="celebration-icon">
-                  🎉
-                  </div>
-                  <h3 className="unicorn-text">Congratulations!</h3>
+                <div className="celebration-container">
+                  <div className="celebration-icon">🎉</div>
+                  <h2 className="score-percentage">100%</h2>
+                </div>
+              )}
+              
+              {score !== questions.length && (
+                <div className="not-perfect-score">
+                  <Bug className="not-perfect-score" size={65} />
                   <p className="score-display"><span className="score">{score}/{questions.length}</span></p>
                 </div>
               )}
-              {score < questions.length && questions.length > 0 && (
-                 <div className="not-perfect-score">
-                    <Bug className="not-perfect-score" size={50} />
-                 </div>
-              )}
-              
               
               <div className="questions-review">
-                {questions.map((question, index) => (
-                  <div key={index} className="question-review">
-                    <h4 className="question-number">Question {index + 1}</h4>
+                  {questions.map((question, index) => (
+                    <div key={index} className="question-review">
+                      <h4 className="question-number">Question {index + 1}</h4>
                     <p className="question-text">{question.question}</p>
                     
                     <div className="options-review">
@@ -410,9 +422,14 @@ export const GrammarQuizModal = ({
                           optionClass += " correct-answer";
                         }
                         
+                        const optionLabel = String.fromCharCode(65 + optIndex); // A, B, C, ...
+                        
                         return (
                           <div key={optIndex} className={optionClass}>
-                            <span className="option-text">{option}</span>
+                            <div className="option-content">
+                              <span className="option-label">{optionLabel}</span>
+                              <span className="option-text">{option}</span>
+                            </div>
                             {isUserAnswer && (
                               question.isCorrect 
                                 ? <CheckCircle className="result-icon" size={20} /> 
@@ -425,38 +442,38 @@ export const GrammarQuizModal = ({
                   </div>
                 ))}
               </div>
-              
-              <div className="quiz-actions">
-                <button className="restart-button" onClick={handleRestartQuiz}>
-                  Try Again
-                </button>
-                <button className="close-quiz-button" onClick={onClose}>
-                  Close
-                </button>
-              </div>
             </div>
           ) : (
             <div className="quiz-questions">
+            <div className="quiz-questions-header">
+              <HeartHandshake className="not-perfect-score" size={65} />
+            </div>
               {questions.map((question, index) => (
                 <div key={index} className="quiz-question">
                   <h3 className="question-number">Question {index + 1}</h3>
                   <p className="question-text">{question.question}</p>
                   
                   <div className="options-container">
-                    {question.options.map((option, optIndex) => (
-                      <button
-                        key={optIndex}
-                        className={`option-button ${selectedOptions[index] === option ? 'selected' : ''}`}
-                        onClick={() => handleOptionSelect(index, option)}
-                      >
-                        {option}
-                      </button>
-                    ))}
+                    {question.options.map((option, optIndex) => {
+                      const optionLabel = String.fromCharCode(65 + optIndex); // A, B, C, ...
+                      
+                      return (
+                        <button
+                          key={optIndex}
+                          className={`option-button ${selectedOptions[index] === option ? 'selected' : ''}`}
+                          onClick={() => handleOptionSelect(index, option)}
+                        >
+                          <div className="option-content">
+                            <span className="option-label">{optionLabel}</span>
+                            <span className="option-text">{option}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
-              
-              <button 
+            <button 
                 className="submit-quiz-button"
                 onClick={handleSubmitQuiz}
                 disabled={Object.keys(selectedOptions).length < questions.length}
@@ -466,6 +483,27 @@ export const GrammarQuizModal = ({
             </div>
           )}
         </div>
+        
+        {showResults && (
+          <div className="quiz-footer">
+            <button className="try-again-button" onClick={handleRestartQuiz}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-rotate-ccw">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              Try Again
+            </button>
+            <button className="generate-new-button" onClick={handleGenerateNewQuiz}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-refresh-cw">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                <path d="M3 21v-5h5"/>
+              </svg>
+              Generate New Quiz
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
