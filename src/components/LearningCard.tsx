@@ -9,6 +9,8 @@ import OpenAI from 'openai';
 import { toast } from 'react-hot-toast';
 import { PDFPreview } from './PDFPreview';
 import { ReadingPDFViewer } from './ReadingPDFViewer';
+import { ReadingQuizModal } from './ReadingQuizModal';
+import '../styles/components/ReadingQuizModal.css';
 
 interface GrammarPoint {
   id: string;
@@ -25,6 +27,7 @@ interface Unit {
   id: string;
   title: string;
   story?: {
+    id: string;
     content: string;
   };
   vocabulary?: Array<{
@@ -59,7 +62,7 @@ interface TextSelection {
   isPlaying: boolean;
 }
 
-const openai = new OpenAI({
+const openai_tts = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_WILDCARD_API_KEY,
   baseURL: import.meta.env.VITE_OPENAI_WILDCARD_BASE_URL,
   dangerouslyAllowBrowser: true // 允许在浏览器中使用
@@ -82,6 +85,15 @@ export const LearningCard = () => {
   const [readingSpeed, setReadingSpeed] = useState<'very_slow' | 'slow' | 'normal'>('normal');
   const [activeSlide, setActiveSlide] = useState(0);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [showReadingQuiz, setShowReadingQuiz] = useState(false);
+  const [readingUnicorns, setReadingUnicorns] = useState(0);
+  const [grammarUnicorns, setGrammarUnicorns] = useState(0);
+  const [storyUnicorns, setStoryUnicorns] = useState(0);
+  const [loadingUnicorns, setLoadingUnicorns] = useState(false);
+  const [quizStats, setQuizStats] = useState({
+    totalQuizzes: 0,
+    totalSubmissions: 0
+  });
 
   useEffect(() => {
     fetchUnits();
@@ -98,6 +110,7 @@ export const LearningCard = () => {
           title,
           reading_file,
           stories (
+            id,
             content,
             type
           ),
@@ -352,7 +365,7 @@ export const LearningCard = () => {
         'normal': 1.0      // 正常
       }[readingSpeed];
 
-      const mp3 = await openai.audio.speech.create({
+      const mp3 = await openai_tts.audio.speech.create({
         model: "tts-1",
         voice: "echo",
         input: textToPlay,
@@ -384,6 +397,113 @@ export const LearningCard = () => {
     setSelectedText(prev => prev ? { ...prev, isPlaying: false } : null);
   };
 
+  // 添加新的 useEffect 来获取 unicorn 记录
+  useEffect(() => {
+    const fetchUnicornCounts = async () => {
+      if (!selectedUnit) return;
+      
+      try {
+        setLoadingUnicorns(true);
+        
+        // 获取当前用户
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData?.user) return;
+        
+        // 获取 in-class-reading 类型的记录
+        const { data: readingData, error: readingError } = await supabase
+          .from('unicorn_records')
+          .select('id')
+          .eq('user_id', userData.user.id)
+          .eq('unit_id', selectedUnit.id)
+          .eq('quiz_type', 'in-class-reading');
+          
+        if (readingError) throw readingError;
+        
+        // 获取 grammar 类型的记录
+        const { data: grammarData, error: grammarError } = await supabase
+          .from('unicorn_records')
+          .select('id')
+          .eq('user_id', userData.user.id)
+          .eq('unit_id', selectedUnit.id)
+          .eq('quiz_type', 'grammar');
+          
+        if (grammarError) throw grammarError;
+        
+        // 获取 story-reading 类型的记录
+        const { data: storyData, error: storyError } = await supabase
+          .from('unicorn_records')
+          .select('id')
+          .eq('user_id', userData.user.id)
+          .eq('unit_id', selectedUnit.id)
+          .eq('quiz_type', 'story-reading');
+          
+        if (storyError) throw storyError;
+        
+        // 设置各类型的 unicorn 数量（最多5个）
+        setReadingUnicorns(Math.min(readingData.length, 5));
+        setGrammarUnicorns(Math.min(grammarData.length, 5));
+        setStoryUnicorns(Math.min(storyData.length, 5));
+        
+      } catch (error) {
+        console.error('Error fetching unicorn counts:', error);
+      } finally {
+        setLoadingUnicorns(false);
+      }
+    };
+    
+    fetchUnicornCounts();
+  }, [selectedUnit]);
+
+  // 获取当前活动标签的 unicorn 数量
+  const getActiveUnicorns = () => {
+    switch (activeSlide) {
+      case 0: return readingUnicorns;
+      case 1: return grammarUnicorns;
+      case 2: return storyUnicorns;
+      default: return 0;
+    }
+  };
+
+  // 添加新的 useEffect 来获取 quiz 统计数据
+  useEffect(() => {
+    const fetchQuizStats = async () => {
+      if (!selectedUnit) return;
+      
+      try {
+        // 获取当前用户
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData?.user) return;
+        
+        // 获取本单元已生成的 quiz 总数
+        const { data: quizData, error: quizError } = await supabase
+          .from('reading_quiz')
+          .select('id')
+          .eq('unit_id', selectedUnit.id);
+          
+        if (quizError) throw quizError;
+        
+        // 获取本单元的提交总次数
+        const { data: submissionData, error: submissionError } = await supabase
+          .from('reading_quiz_records')
+          .select('id')
+          .eq('unit_id', selectedUnit.id);
+          
+        if (submissionError) throw submissionError;
+        
+        // 设置 quiz 统计数据
+        setQuizStats({
+          totalQuizzes: quizData.length,
+          totalSubmissions: submissionData.length
+        });
+        
+      } catch (error) {
+        console.error('Error fetching quiz stats:', error);
+      }
+    };
+    
+    fetchQuizStats();
+  }, [selectedUnit]);
+
   return (
     <div className="learning-card-container">
       {/* 移动到顶部的按钮组 */}
@@ -409,6 +529,33 @@ export const LearningCard = () => {
           <BrainCircuit size={20} />
           <span>Stories</span>
         </button>
+        
+        {/* 添加 unicorn 图标显示 */}
+        <div className="tab-unicorns">
+          {Array(5).fill(0).map((_, index) => (
+            <div key={`unicorn-${index}`} className="tab-unicorn-icon">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="28" 
+                height="28" 
+                viewBox="0 0 32 32" 
+                fill="none" 
+                stroke={index < getActiveUnicorns() ? "#8d4bb9" : "#cccccc"} 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={index < getActiveUnicorns() ? 'active' : 'inactive'}
+              >
+                <path d="m15.6 4.8 2.7 2.3"/>
+                <path d="M15.5 10S19 7 22 2c-6 2-10 5-10 5"/>
+                <path d="M11.5 12H11"/>
+                <path d="M5 15a4 4 0 0 0 4 4h7.8l.3.3a3 3 0 0 0 4-4.46L12 7c0-3-1-5-1-5S8 3 8 7c-4 1-6 3-6 3"/>
+                <path d="M2 4.5C4 3 6 3 6 3l2 4"/>
+                <path d="M6.14 17.8S4 19 2 22"/>
+              </svg>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* 主卡片内容 */}
@@ -457,11 +604,34 @@ export const LearningCard = () => {
                             containerStyle="small"
                             fileType="reading"
                             className="preview-box clickable"
-                            existingStory={selectedUnit.story?.content}
                             onCustomClick={() => setShowPDFViewer(true)}
                             width={220}
                             height={180}
                           />
+                          
+                          {/* Add Reading Quiz Button */}
+                          <button
+                            className="reading-quiz-button"
+                            onClick={() => setShowReadingQuiz(true)}
+                            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-unicorn-head"><path d="m15.6 4.8 2.7 2.3"/><path d="M15.5 10S19 7 22 2c-6 2-10 5-10 5"/><path d="M11.5 12H11"/><path d="M5 15a4 4 0 0 0 4 4h7.8l.3.3a3 3 0 0 0 4-4.46L12 7c0-3-1-5-1-5S8 3 8 7c-4 1-6 3-6 3"/><path d="M2 4.5C4 3 6 3 6 3l2 4"/><path d="M6.14 17.8S4 19 2 22"/></svg>
+                            Reading Quiz
+                          </button>
+                          
+                          {/* Add Quiz Stats */}
+                          <div className="quiz-stats">
+                            <div className="quiz-stat-item">
+                              <span className="quiz-stat-label">Quizzes:</span>
+                              <span className="quiz-stat-value">{quizStats.totalQuizzes}</span>
+                            </div>
+                            <div className="quiz-stat-item">
+                              <span className="quiz-stat-label">Submissions:</span>
+                              <span className="quiz-stat-value">{quizStats.totalSubmissions}</span>
+                            </div>
+                          </div>
                         </div>
                       )}
                       <div 
@@ -752,6 +922,17 @@ export const LearningCard = () => {
           </div>
         )}
       </div>
+      
+      {/* Add Reading Quiz Modal */}
+      {showReadingQuiz && selectedUnit?.story?.content && (
+        <ReadingQuizModal
+          isOpen={showReadingQuiz}
+          onClose={() => setShowReadingQuiz(false)}
+          storyContent={selectedUnit.story.content}
+          unitId={selectedUnit.id}
+          storyId={selectedUnit.story?.id}
+        />
+      )}
     </div>
   );
 };

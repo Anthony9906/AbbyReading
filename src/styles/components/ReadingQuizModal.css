@@ -1,0 +1,312 @@
+.reading-quiz-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.reading-quiz-modal {
+  background-color: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.reading-quiz-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #6B5ECD;
+  color: white;
+}
+
+.reading-quiz-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.reading-quiz-content {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 0;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+  color: #6B5ECD;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.quiz-results {
+  text-align: center;
+}
+
+.quiz-results h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.score-percentage {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #8d4bb9;
+  margin: 1rem 0;
+}
+
+.quiz-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.quiz-question {
+  background-color: #eeecfb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border-left: 4px solid #ddd;
+  transition: all 0.3s ease;
+}
+
+.quiz-question.correct {
+  border-left-color: #519753;
+  background-color: rgba(123, 174, 125, 0.1);
+}
+
+.quiz-question.incorrect {
+  border-left-color: #c9544c;
+  background-color: rgba(181, 107, 102, 0.1);
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.question-header h3 {
+  margin: 0;
+  color: #6B5ECD;
+  font-size: 1.1rem;
+}
+.not-perfect-score {
+  color: #8d4bb9;
+}
+
+.result-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.result-icon.correct {
+  color: #509753;
+}
+
+.result-icon.incorrect {
+  color: #c9544c;
+}
+
+.question-text {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.question-option {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background-color: white;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.question-option:hover:not(.selected):not(.correct-answer):not(.wrong-answer) {
+  background-color: #dcd9f3;
+}
+
+.question-option.selected {
+  background-color: #6B5ECD;
+  color: white;
+  border-color: #6B5ECD;
+}
+
+.question-option.correct-answer {
+  background-color: rgba(76, 175, 80, 0.1);
+  border-color: #4CAF50;
+  color: #333;
+}
+
+.question-option.wrong-answer {
+  background-color: rgba(244, 67, 54, 0.1);
+  border-color: #F44336;
+  color: #333;
+}
+
+.option-letter {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #ebeaf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.selected .option-letter {
+  background-color: white;
+  color: #6B5ECD;
+}
+
+.option-text {
+  flex: 1;
+}
+
+.reading-quiz-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.submit-button, .regenerate-button, .retry-button {
+  background-color: #6B5ECD;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.submit-button:hover, .regenerate-button:hover, .retry-button:hover {
+  background-color: #5a4eb8;
+}
+
+.submit-button:disabled, .regenerate-button:disabled, .retry-button:disabled {
+  background-color: #a9a3d9;
+  cursor: not-allowed;
+}
+
+.retry-button {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.retry-button:hover {
+  background-color: #e0e0e0;
+}
+
+.result-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* 按钮图标样式 */
+.submit-button, .retry-button, .regenerate-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 完美得分样式 */
+.perfect-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 16px;
+  animation: bounce 1s ease infinite;
+  font-size: 40px;
+}
+
+.trophy-icon {
+  color: #d3648b;
+  filter: drop-shadow(0 0 6px rgba(245, 234, 209, 0.6));
+}
+
+.perfect-score p {
+  margin-top: 8px;
+  font-weight: bold;
+  color: #6B5ECD;
+  text-align: center;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* 添加一个全局样式，确保 canvas-confetti 显示在最前面 */
+canvas.confetti-canvas {
+  position: fixed !important;
+  z-index: 2000 !important; /* 确保这个值大于弹窗的 z-index */
+  pointer-events: none !important; /* 允许点击穿透 */
+} 

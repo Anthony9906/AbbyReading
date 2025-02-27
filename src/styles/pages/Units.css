@@ -9,9 +9,10 @@
 }
 
 .content-wrapper {
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+  margin-top: 24px;
 }
 
 .main-content {
@@ -194,4 +195,8 @@
   border-radius: 8px;
   overflow: hidden;
   transition: border-color 0.2s ease;
+}
+
+.stats-card-container {
+  width: 300px;
 }

@@ -19,8 +19,12 @@ export default function Home() {
           stats={userStats}
         />
         <div className="cards-container">
-          <LearningCard />
-          <StatsCard />
+          <div className="learning-card-container">
+            <LearningCard />
+          </div>
+          <div className="stats-card-container">
+            <StatsCard />
+          </div>
         </div>
       </div>
     </div>

@@ -219,8 +219,9 @@ export default function Units() {
               ))}
             </div>
           </div>
-
-          <StatsCard />
+          <div className="stats-card-container">
+            <StatsCard />
+          </div>
         </div>
       </div>
 

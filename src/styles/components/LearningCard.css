@@ -352,33 +352,37 @@
 
 .learning-card-tabs {
   display: flex;
-  gap: 1rem;
-  padding: 0 5rem;
-  margin-bottom: -6px;
+  align-items: center;
+  border-radius: 8px;
+  padding: 8px 60px;
+  gap: 20px;
 }
 
 .tab-button {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  gap: 12px;
+  padding: 8px 24px;
   border: none;
-  border-radius: 8px;
-  background: #d8d6f3;
-  color: #6b5ecd;
+  background: none;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s;
+  background-color: #d8d6f3;
 }
 
 .tab-button:hover {
-  background: #c1baf0;
+  transform: scale(1.1);
+  transition: all 0.2s ease-in-out;
 }
 
 .tab-button.active {
-  background: #6B5ECD;
+  background-color: #6B5ECD;
   color: white;
+}
+
+.tab-button:hover:not(.active) {
+  background-color: #c6c3ec;
 }
 
 /* 移除原来底部按钮的样式 */
@@ -507,4 +511,81 @@
   text-align: center;
   color: #666;
   padding: 2rem;
+}
+
+.reading-quiz-button {
+  margin-top: 30px;
+  background-color: #6B5ECD;
+  color: #ffffffc9;
+  border: none;
+  border-radius: 24px;
+  padding: 10px 14px;
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.reading-quiz-button:hover {
+  background-color: #5a4eb8;
+}
+
+/* 添加 tab-unicorns 样式 */
+.tab-unicorns {
+  display: flex;
+  align-items: center;
+  margin-left: auto; /* 将图标推到右侧 */
+  padding: 0 12px;
+}
+
+.tab-unicorn-icon {
+  margin: 0 2px;
+  transition: transform 0.2s ease;
+}
+
+.tab-unicorn-icon:hover {
+  transform: scale(1.2);
+}
+
+.tab-unicorn-icon svg.active {
+  filter: drop-shadow(0 1px 2px rgba(141, 75, 185, 0.2));
+}
+
+.tab-unicorn-icon svg.inactive {
+  opacity: 0.5;
+}
+
+/* 添加 Quiz Stats 样式 */
+.quiz-stats {
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.quiz-stat-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.quiz-stat-item:last-child {
+  margin-bottom: 0;
+}
+
+.quiz-stat-label {
+  color: #666;
+}
+
+.quiz-stat-value {
+  font-weight: bold;
+  color: #6B5ECD;
 }

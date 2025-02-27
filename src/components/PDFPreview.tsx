@@ -5,7 +5,7 @@ import { PDFViewerModal } from './PDFViewerModal';
 import '../styles/components/PDFPreview.css';
 
 // 修改 worker 配置
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 
 interface PDFPreviewProps {
