@@ -768,3 +768,57 @@
     transform: translateX(0);
   }
 }
+
+/* PDF预览容器样式 */
+.pdf-previews-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.pdf-preview-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.pdf-preview-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.page-number {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  z-index: 1;
+}
+
+/* 添加滚动条样式 */
+.pdf-previews-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pdf-previews-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.pdf-previews-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.pdf-previews-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

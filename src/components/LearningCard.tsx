@@ -13,6 +13,7 @@ import { ReadingQuizModal } from './ReadingQuizModal';
 import '../styles/components/ReadingQuizModal.css';
 import { GrammarQuizModal } from './GrammarQuizModal';
 import { useAppSelector } from "../redux/hooks";
+import { pdfjs } from 'react-pdf';
 
 interface VocabWord {
   word: string;
@@ -78,6 +79,8 @@ export const LearningCard = () => {
   const [showGrammarQuiz, setShowGrammarQuiz] = useState(false);
   const [selectedGrammarPoint, setSelectedGrammarPoint] = useState<any>(null);
   const [showReadingPreview, setShowReadingPreview] = useState(true);
+  const [pdfPageCount, setPdfPageCount] = useState(1);
+  const [initialPdfPage, setInitialPdfPage] = useState(1);
 
   // 从 Redux 获取单元数据
   const { data: units, status } = useAppSelector((state) => state.units);
@@ -458,6 +461,37 @@ export const LearningCard = () => {
     fetchQuizStats();
   }, [selectedUnit]);
 
+  // 添加这个函数来获取PDF的页数
+  const fetchPdfPageCount = async (url: string) => {
+    try {
+      pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
+      
+      const loadingTask = pdfjs.getDocument(url);
+      const pdf = await loadingTask.promise;
+      setPdfPageCount(pdf.numPages);
+      return pdf.numPages;
+    } catch (error) {
+      console.error('Error fetching PDF page count:', error);
+      return 1;
+    }
+  };
+
+  // 当选择的单元改变时，获取PDF页数
+  useEffect(() => {
+    if (selectedUnit?.reading_file) {
+      const url = getFileUrl(selectedUnit.reading_file);
+      if (url) {
+        fetchPdfPageCount(url);
+      }
+    }
+  }, [selectedUnit]);
+
+  // 添加这个函数来打开PDF查看器并跳转到指定页面
+  const openPDFViewerAtPage = (pageNumber: number) => {
+    setInitialPdfPage(pageNumber);
+    setShowPDFViewer(true);
+  };
+
   return (
     <div className="learning-card-container">
       {/* 移动到顶部的按钮组 */}
@@ -620,17 +654,26 @@ export const LearningCard = () => {
                             </div>
                           </div>
                           
-                          <PDFPreview
-                            url={getFileUrl(selectedUnit.reading_file)!}
-                            unitId={selectedUnit.id}
-                            unitTitle={selectedUnit.title}
-                            containerStyle="small"
-                            fileType="reading"
-                            className="preview-box clickable"
-                            onCustomClick={() => setShowPDFViewer(true)}
-                            width={220}
-                            height={180}
-                          />
+                          <div className="pdf-previews-container">
+                            {/* 使用Array.from创建页码数组，最多5页 */}
+                            {Array.from({ length: Math.min(pdfPageCount, 5) }, (_, index) => (
+                              <div key={`pdf-preview-${index}`} className="pdf-preview-item">
+                                <div className="page-number">{index + 1}</div>
+                                <PDFPreview
+                                  url={getFileUrl(selectedUnit.reading_file)!}
+                                  unitId={selectedUnit.id}
+                                  unitTitle={selectedUnit.title}
+                                  containerStyle="small"
+                                  fileType="reading"
+                                  className="preview-box clickable"
+                                  onCustomClick={() => openPDFViewerAtPage(index + 1)}
+                                  width={220}
+                                  height={180}
+                                  pageNumber={index + 1}
+                                />
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                       
@@ -653,6 +696,7 @@ export const LearningCard = () => {
                           url={getFileUrl(selectedUnit.reading_file)!}
                           isOpen={showPDFViewer}
                           onClose={() => setShowPDFViewer(false)}
+                          initialPage={initialPdfPage}
                         />
                       )}
                     </div>

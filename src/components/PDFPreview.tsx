@@ -19,6 +19,7 @@ interface PDFPreviewProps {
   onCustomClick?: () => void;
   width?: number;
   height?: number;
+  pageNumber?: number;
 }
 
 export const PDFPreview = ({ 
@@ -31,7 +32,8 @@ export const PDFPreview = ({
   fileType,
   onCustomClick,
   width,
-  height
+  height,
+  pageNumber
 }: PDFPreviewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -67,7 +69,7 @@ export const PDFPreview = ({
           }
         >
           <Page
-            pageNumber={1}
+            pageNumber={pageNumber || 1}
             width={getDefaultWidth()}
             height={height}
             renderTextLayer={false}

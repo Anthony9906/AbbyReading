@@ -12,9 +12,10 @@ interface ReadingPDFViewerProps {
   url: string;
   isOpen: boolean;
   onClose: () => void;
+  initialPage?: number;
 }
 
-export const ReadingPDFViewer = ({ url, isOpen, onClose }: ReadingPDFViewerProps) => {
+export const ReadingPDFViewer = ({ url, isOpen, onClose, initialPage }: ReadingPDFViewerProps) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
@@ -48,7 +49,7 @@ export const ReadingPDFViewer = ({ url, isOpen, onClose }: ReadingPDFViewerProps
   // 处理文档加载成功
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-    setPageNumber(1);
+    setPageNumber(initialPage || 1);
   };
   
   // 处理页面加载成功，获取 PDF 页面尺寸
