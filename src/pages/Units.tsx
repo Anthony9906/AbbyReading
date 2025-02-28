@@ -1,74 +1,26 @@
 import { useState, useEffect } from "react";
 import { UserHeader } from "../components/UserHeader";
 import { StatsCard } from "../components/StatsCard";
-import { Plus, FileText, FileImage, Settings2 } from "lucide-react";
+import { Plus, FileText, FileImage, Settings2, BookOpen, Award, Star } from "lucide-react";
 import { AddUnitModal } from "../components/AddUnitModal";
 import { supabase } from "../lib/supabase";
 import { PDFPreview } from "../components/PDFPreview";
+import { useAppDispatch, useAppSelector } from "../redux/hooks";
+import { fetchUnitsPage, addUnit, editUnit } from "../redux/slices/unitsPageSlice";
 import "../styles/pages/Units.css";
 
-interface Unit {
-  id: string;
-  title: string;
-  unit: string;
-  week: string;
-  type: string;
-  reading_file: string | null;
-  report_file: string | null;
-  progress: number;
-  stories?: Array<{
-    content: string;
-  }>;
-  story?: {
-    content: string;
-  } | null;
-  weekly_report?: {
-    original_text: string;
-  } | null;
-}
-
 export default function Units() {
+  const dispatch = useAppDispatch();
+  const { units, status, error } = useAppSelector((state) => state.unitsPage);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [editingUnit, setEditingUnit] = useState<any | null>(null);
 
+  // 在组件挂载时获取单元数据
   useEffect(() => {
-    fetchUnits();
-  }, []);
-
-  const fetchUnits = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { data, error } = await supabase
-        .from('units')
-        .select(`
-          *,
-          stories (
-            content,
-            type
-          ),
-          weekly_report (
-            original_text
-          )
-        `)
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // 处理数据，找到每个 unit 的 inclass 类型故事和周报
-      const unitsWithData = data?.map(unit => ({
-        ...unit,
-        story: unit.stories?.find((story: { type: string }) => story.type === 'inclass') || null,
-        weekly_report: unit.weekly_report?.[0] || null
-      }));
-
-      setUnits(unitsWithData || []);
-    } catch (error) {
-      console.error('Error fetching units:', error);
+    if (status === 'idle') {
+      dispatch(fetchUnitsPage());
     }
-  };
+  }, [dispatch, status]);
 
   const getFileUrl = (path: string | null) => {
     if (!path) return null;
@@ -78,27 +30,24 @@ export default function Units() {
     return data.publicUrl;
   };
 
-  const userStats = {
-    stories: { label: "STORIES", value: 178 },
-    glossary: { label: "GLOSSARY", value: 45 },
-    units: { label: "UNITS", value: 521 },
+  // 获取单元类型对应的图标和颜色
+  const getUnitTypeInfo = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'reading':
+        return { icon: <BookOpen size={16} />, color: '#4CAF50' };
+      case 'writing':
+        return { icon: <FileText size={16} />, color: '#2196F3' };
+      case 'speaking':
+        return { icon: <Award size={16} />, color: '#FF9800' };
+      default:
+        return { icon: <Star size={16} />, color: '#9C27B0' };
+    }
   };
 
   const handleAddUnit = async (unitData: any) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from('units')
-        .insert([
-          {
-            ...unitData,
-            user_id: user?.id
-          }
-        ]);
-
-      if (error) throw error;
-      fetchUnits(); // 刷新列表
+      await dispatch(addUnit(unitData)).unwrap();
+      setIsModalOpen(false);
     } catch (error) {
       console.error('Error adding unit:', error);
     }
@@ -106,18 +55,33 @@ export default function Units() {
 
   const handleEditUnit = async (unitData: any) => {
     try {
-      const { error } = await supabase
-        .from('units')
-        .update(unitData)
-        .eq('id', editingUnit?.id);
-
-      if (error) throw error;
-      fetchUnits();
+      await dispatch(editUnit({
+        unitId: editingUnit?.id,
+        unitData
+      })).unwrap();
       setEditingUnit(null);
     } catch (error) {
       console.error('Error updating unit:', error);
     }
   };
+
+  // 显示加载状态
+  if (status === 'loading' && units.length === 0) {
+    return (
+      <div className="units-page loading">
+        <div className="loading-spinner">Loading your learning adventures...</div>
+      </div>
+    );
+  }
+
+  // 显示错误信息
+  if (status === 'failed' && error) {
+    return (
+      <div className="units-page error">
+        <div className="error-message">Oops! Something went wrong: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="units-page">
@@ -125,99 +89,139 @@ export default function Units() {
         <UserHeader 
           avatar="/images/avatar.svg"
           name="Abby"
-          stats={userStats}
+          stats={{
+            stories: { label: "STORIES", value: units.filter(u => u.story).length },
+            glossary: { label: "GLOSSARY", value: 45 },
+            units: { label: "UNITS", value: units.length },
+          }}
         />
         
         <div className="content-wrapper">
           <div className="main-content">
-            <button 
-              className="add-button"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <Plus className="add-icon" />
-            </button>
-
-            <h1 className="page-title">Units</h1>
+            <div className="header-section">
+              <h1 className="page-title">My Learning Units</h1>
+              <button 
+                className="add-button"
+                onClick={() => setIsModalOpen(true)}
+                title="Add new unit"
+              >
+                <Plus className="add-icon" />
+              </button>
+            </div>
             
-            <div className="units-list">
-              {units.map((unit) => (
-                <div key={unit.id} className="unit-card">
-                  <div className="unit-content">
-                    <div className="unit-info">
-                      <h2 className="unit-title">{unit.title}</h2>
-                      <div className="unit-tags">
-                        <span className="tag">{unit.unit}</span>
-                        <span className="tag">{unit.week}</span>
-                        <span className="tag">{unit.type}</span>
-                      </div>
-                    </div>
-                    <button 
-                      className="edit-button"
-                      onClick={() => setEditingUnit(unit)}
-                    >
-                      <Settings2 className="edit-icon" />
-                    </button>
-                    <div className="unit-status">
-                      <div className="progress">{unit.progress}%</div>
-                      <div className="file-previews">
-                        <div className={`preview-box ${unit.story ? 'has-story' : ''}`}>
-                          {unit.reading_file ? (
-                            <div className="preview-container">
-                              {unit.reading_file.toLowerCase().endsWith('.pdf') ? (
-                                <PDFPreview 
-                                  url={getFileUrl(unit.reading_file)!} 
-                                  className="preview"
-                                  unitId={unit.id}
-                                  unitTitle={unit.title}
-                                  containerStyle="small"
-                                  existingStory={unit.story?.content}
-                                  fileType="reading"
-                                  width={100}
-                                  height={100}
-                                />
+            {units.length === 0 ? (
+              <div className="empty-state">
+                <img src="/images/empty-units.svg" alt="No units" className="empty-image" />
+                <h3>No units yet</h3>
+                <p>Start your learning journey by adding your first unit!</p>
+              </div>
+            ) : (
+              <div className="units-list">
+                {units.map((unit) => {
+                  const typeInfo = getUnitTypeInfo(unit.type);
+                  return (
+                    <div key={unit.id} className="unit-card">
+                      <div className="unit-content">
+                        <div className="unit-info">
+                          <h2 className="unit-title">{unit.title}</h2>
+                          <div className="unit-tags">
+                            <span className="tag">{unit.unit}</span>
+                            <span className="tag">{unit.week}</span>
+                            <span className="tag" style={{ backgroundColor: `${typeInfo.color}20`, color: typeInfo.color }}>
+                              {typeInfo.icon}
+                              <span className="tag-text">{unit.type}</span>
+                            </span>
+                          </div>
+                        </div>
+                        <button 
+                          className="edit-button"
+                          onClick={() => setEditingUnit(unit)}
+                          title="Edit unit"
+                        >
+                          <Settings2 className="edit-icon" />
+                        </button>
+                        <div className="unit-status">
+                          <div className="progress-section">
+                            <div className="progress-label">Progress</div>
+                            <div className="progress-bar">
+                              <div 
+                                className="progress-fill" 
+                                style={{ width: `${unit.progress}%` }}
+                              ></div>
+                            </div>
+                            <div className="progress-value">{unit.progress}%</div>
+                          </div>
+                          <div className="file-previews">
+                            <div className={`preview-box ${unit.story ? 'has-story' : ''}`}>
+                              {unit.reading_file ? (
+                                <div className="preview-container">
+                                  {unit.reading_file.toLowerCase().endsWith('.pdf') ? (
+                                    <PDFPreview 
+                                      url={getFileUrl(unit.reading_file)!} 
+                                      className="preview"
+                                      unitId={unit.id}
+                                      unitTitle={unit.title}
+                                      containerStyle="small"
+                                      existingStory={unit.story?.content}
+                                      fileType="reading"
+                                      width={100}
+                                      height={100}
+                                    />
+                                  ) : (
+                                    <img 
+                                      src={getFileUrl(unit.reading_file)!} 
+                                      alt="Reading" 
+                                      className="preview"
+                                    />
+                                  )}
+                                  <div className="preview-label">Reading</div>
+                                </div>
                               ) : (
-                                <img 
-                                  src={getFileUrl(unit.reading_file)!} 
-                                  alt="Reading" 
-                                  className="preview"
-                                />
+                                <div className="empty-preview">
+                                  <FileImage className="placeholder-icon" />
+                                  <div className="preview-label">Reading</div>
+                                </div>
                               )}
                             </div>
-                          ) : (
-                            <FileImage className="placeholder-icon" />
-                          )}
-                        </div>
-                        <div className={`preview-box ${unit.weekly_report ? 'has-story' : ''}`}>
-                          {unit.report_file ? (
-                            unit.report_file.toLowerCase().endsWith('.pdf') ? (
-                              <PDFPreview 
-                                url={getFileUrl(unit.report_file)!} 
-                                className="preview"
-                                unitId={unit.id}
-                                unitTitle={unit.title}
-                                containerStyle="small"
-                                existingStory={unit.weekly_report?.original_text}
-                                fileType="report"
-                                width={100}
-                                height={100}
-                              />
-                            ) : (
-                              <img 
-                                src={getFileUrl(unit.report_file)!} 
-                                alt="Report" 
-                                className="preview"
-                              />
-                            )
-                          ) : (
-                            <FileText className="placeholder-icon" />
-                          )}
+                            <div className={`preview-box ${unit.weekly_report ? 'has-story' : ''}`}>
+                              {unit.report_file ? (
+                                <div className="preview-container">
+                                  {unit.report_file.toLowerCase().endsWith('.pdf') ? (
+                                    <PDFPreview 
+                                      url={getFileUrl(unit.report_file)!} 
+                                      className="preview"
+                                      unitId={unit.id}
+                                      unitTitle={unit.title}
+                                      containerStyle="small"
+                                      existingStory={unit.weekly_report?.original_text}
+                                      fileType="report"
+                                      width={100}
+                                      height={100}
+                                    />
+                                  ) : (
+                                    <img 
+                                      src={getFileUrl(unit.report_file)!} 
+                                      alt="Report" 
+                                      className="preview"
+                                    />
+                                  )}
+                                  <div className="preview-label">Report</div>
+                                </div>
+                              ) : (
+                                <div className="empty-preview">
+                                  <FileText className="placeholder-icon" />
+                                  <div className="preview-label">Report</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <div className="stats-card-container">
             <StatsCard />
@@ -227,19 +231,13 @@ export default function Units() {
 
       <AddUnitModal 
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          fetchUnits();
-        }}
+        onClose={() => setIsModalOpen(false)}
         onAddUnit={handleAddUnit}
       />
 
       <AddUnitModal 
         isOpen={editingUnit !== null}
-        onClose={() => {
-          setEditingUnit(null);
-          fetchUnits();
-        }}
+        onClose={() => setEditingUnit(null)}
         onAddUnit={handleEditUnit}
         initialData={editingUnit}
       />

@@ -100,7 +100,6 @@ export const LearningCard = () => {
   const handleUnitChange = (unitId: string) => {
     const unit = units.find((u: any) => u.id === unitId);
     setSelectedUnit(unit || null);
-    console.log('selected unit :', unit);
   };
 
   const handleWordClick = async (word: string, event: React.MouseEvent) => {

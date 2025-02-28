@@ -114,7 +114,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 1rem 0;
-  color: #666;
+  margin-top: 1rem;
+  color: #6e48b5;
 }
 
 .loading-spinner {
@@ -122,6 +123,7 @@
   height: 24px;
   animation: spin 1s linear infinite;
   color: #6B5ECD;
+  margin-top: -100px;
 }
 
 @keyframes spin {

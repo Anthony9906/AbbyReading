@@ -63,7 +63,7 @@ export default function Home() {
       <div className="home-container">
         <UserHeader 
           avatar={userData?.avatar_url || "/images/avatar.svg"}
-          name={userData?.name || "User"}
+          name={userData?.name || "Abby"}
           stats={userStats}
         />
         <div className="cards-container">

@@ -47,7 +47,6 @@ export const VocabPopover = ({
       {isLoading ? (
         <div className="loading-container">
           <Loader2 className="loading-spinner" />
-          <span>Loading...</span>
         </div>
       ) : noResult ? (
         <div className="no-result">
