@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award } from "lucide-react";
+import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award, Book, CheckCircle, BarChart2, Clock, FileText, Brain, BookOpen } from "lucide-react";
 import { supabase } from '../lib/supabase';
 import '../styles/components/LearningCard.css';
 import { VocabPopover } from './VocabPopover';
@@ -12,32 +12,7 @@ import { ReadingPDFViewer } from './ReadingPDFViewer';
 import { ReadingQuizModal } from './ReadingQuizModal';
 import '../styles/components/ReadingQuizModal.css';
 import { GrammarQuizModal } from './GrammarQuizModal';
-
-interface GrammarPoint {
-  id: string;
-  grammar_original_text: string;
-  grammar_point: string;
-  explanation: string;
-  example: string;
-  exercise: string;
-  solution: string;
-  summary: string;
-}
-
-interface Unit {
-  id: string;
-  title: string;
-  story?: {
-    id: string;
-    content: string;
-  };
-  vocabulary?: Array<{
-    word: string;
-    chinese_definition: string;
-  }>;
-  grammar?: Array<GrammarPoint>;
-  reading_file?: string;
-}
+import { useAppSelector } from "../redux/hooks";
 
 interface VocabWord {
   word: string;
@@ -85,8 +60,7 @@ const getFileUrl = (path: string | null) => {
 };
 
 export const LearningCard = () => {
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<any>(null);
   const [selectedWord, setSelectedWord] = useState<WordSelection | null>(null);
   const [selectedText, setSelectedText] = useState<TextSelection | null>(null);
   const [readingSpeed, setReadingSpeed] = useState<'very_slow' | 'slow' | 'normal'>('normal');
@@ -104,67 +78,25 @@ export const LearningCard = () => {
   const [showGrammarQuiz, setShowGrammarQuiz] = useState(false);
   const [selectedGrammarPoint, setSelectedGrammarPoint] = useState<any>(null);
 
+  // 从 Redux 获取单元数据
+  const { data: units, status } = useAppSelector((state) => state.units);
+  
+  // 当单元数据加载完成后，自动选择第一个单元
   useEffect(() => {
-    fetchUnits();
-  }, []);
-
-  const fetchUnits = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { data, error } = await supabase
-        .from('units')
-        .select(`
-          id,
-          title,
-          reading_file,
-          stories (
-            id,
-            content,
-            type
-          ),
-          vocabulary (
-            word,
-            chinese_definition
-          ),
-          grammar (
-            id,
-            grammar_original_text,
-            grammar_point,
-            explanation,
-            example,
-            exercise,
-            solution,
-            summary
-          )
-        `)
-        .eq('user_id', user?.id)
-        .not('stories', 'is', null)
-        .not('vocabulary', 'is', null);
-
-      if (error) throw error;
-
-      const processedUnits = data
-        .map(unit => ({
-          ...unit,
-          story: unit.stories?.find(s => s.type === 'inclass'),
-          vocabulary: unit.vocabulary,
-          grammar: unit.grammar
-        }))
-        .filter(unit => unit.story && unit.vocabulary?.length > 0);
-
-      setUnits(processedUnits);
-      if (processedUnits.length > 0) {
-        setSelectedUnit(processedUnits[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching units:', error);
+    if (status === 'succeeded' && units.length > 0 && !selectedUnit) {
+      setSelectedUnit(units[0]);
     }
-  };
+  }, [status, units, selectedUnit]);
+
+  // 如果数据仍在加载中，显示加载状态
+  if (status === 'loading') {
+    return <div className="learning-card-loading">Loading...</div>;
+  }
 
   const handleUnitChange = (unitId: string) => {
-    const unit = units.find(u => u.id === unitId);
+    const unit = units.find((u: any) => u.id === unitId);
     setSelectedUnit(unit || null);
+    console.log('selected unit :', unit);
   };
 
   const handleWordClick = async (word: string, event: React.MouseEvent) => {
@@ -591,7 +523,7 @@ export const LearningCard = () => {
                 value={selectedUnit?.id || ''}
                 onChange={(e) => handleUnitChange(e.target.value)}
               >
-                {units.map(unit => (
+                {units.map((unit: any) => (
                   <option key={unit.id} value={unit.id}>
                     {unit.title}
                   </option>
@@ -611,54 +543,45 @@ export const LearningCard = () => {
                   {/* Reading Section - Slide 1 */}
                   <div className={`slide ${activeSlide === 0 ? 'active' : ''}`}>
                     <div className="reading-section" style={{ position: 'relative' }}>
+                      <div className="reading-header">
+                        
+                        {/* Reading Quiz Button - 移到标题右侧 */}
+                        <button
+                          className="reading-quiz-button"
+                          onClick={() => setShowReadingQuiz(true)}
+                          onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" 
+                              width="32" 
+                              height="32" 
+                              viewBox="0 0 26 26" 
+                              fill="none" 
+                              stroke="#ffffff96" 
+                              strokeWidth="1.5" 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              className="lucide lucide-unicorn-head">
+                                <path d="m15.6 4.8 2.7 2.3"/>
+                                <path d="M15.5 10S19 7 22 2c-6 2-10 5-10 5"/>
+                                <path d="M11.5 12H11"/>
+                                <path d="M5 15a4 4 0 0 0 4 4h7.8l.3.3a3 3 0 0 0 4-4.46L12 7c0-3-1-5-1-5S8 3 8 7c-4 1-6 3-6 3"/>
+                                <path d="M2 4.5C4 3 6 3 6 3l2 4"/>
+                                <path d="M6.14 17.8S4 19 2 22"/>
+                            </svg>
+                          Reading Quiz
+                        </button>
+                      </div>
+                      
                       {selectedUnit?.reading_file && (
                         <div className="reading-preview" style={{
                           position: 'absolute',
-                          top: '20px',
-                          right: '20px',
+                          top: '172px',
+                          right: '40px',
                           zIndex: 10
                         }}>
-                          <PDFPreview
-                            url={getFileUrl(selectedUnit.reading_file)!}
-                            unitId={selectedUnit.id}
-                            unitTitle={selectedUnit.title}
-                            containerStyle="small"
-                            fileType="reading"
-                            className="preview-box clickable"
-                            onCustomClick={() => setShowPDFViewer(true)}
-                            width={220}
-                            height={180}
-                          />
-                          
-                          {/* Add Reading Quiz Button */}
-                          <button
-                            className="reading-quiz-button"
-                            onClick={() => setShowReadingQuiz(true)}
-                            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
-                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
-                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" 
-                                width="24" 
-                                height="24" 
-                                viewBox="0 0 24 24" 
-                                fill="none" 
-                                stroke="#FFFFFF" 
-                                strokeWidth="1.5" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round" 
-                                className="lucide lucide-unicorn-head">
-                                  <path d="m15.6 4.8 2.7 2.3"/>
-                                  <path d="M15.5 10S19 7 22 2c-6 2-10 5-10 5"/>
-                                  <path d="M11.5 12H11"/>
-                                  <path d="M5 15a4 4 0 0 0 4 4h7.8l.3.3a3 3 0 0 0 4-4.46L12 7c0-3-1-5-1-5S8 3 8 7c-4 1-6 3-6 3"/>
-                                  <path d="M2 4.5C4 3 6 3 6 3l2 4"/>
-                                  <path d="M6.14 17.8S4 19 2 22"/>
-                              </svg>
-                            Reading Quiz
-                          </button>
-                          
-                          {/* Add Quiz Stats */}
+                          {/* Add Quiz Stats - 移到PDF预览上方 */}
                           <div className="quiz-stats">
                             <div className="quiz-stat-item">
                               <span className="quiz-stat-label">Quizzes:</span>
@@ -673,8 +596,21 @@ export const LearningCard = () => {
                               <span className="quiz-stat-value">{quizStats.accuracyRate}%</span>
                             </div>
                           </div>
+                          
+                          <PDFPreview
+                            url={getFileUrl(selectedUnit.reading_file)!}
+                            unitId={selectedUnit.id}
+                            unitTitle={selectedUnit.title}
+                            containerStyle="small"
+                            fileType="reading"
+                            className="preview-box clickable"
+                            onCustomClick={() => setShowPDFViewer(true)}
+                            width={220}
+                            height={180}
+                          />
                         </div>
                       )}
+                      
                       <div 
                         className="story-text"
                         onMouseUp={handleTextSelection}
@@ -682,9 +618,9 @@ export const LearningCard = () => {
                       {selectedUnit?.story?.content && selectedUnit?.vocabulary ? 
                         highlightVocabulary(
                           selectedUnit.story.content, 
-                          selectedUnit.vocabulary.map(v => v.word)
+                          selectedUnit.vocabulary.map((v: any) => v.word)
                         ) : 
-                        'No story available'
+                        'No story display, please try to select unit from the dropdown above'
                       }
                       </div>
 
@@ -703,7 +639,7 @@ export const LearningCard = () => {
                   <div className={`slide ${activeSlide === 1 ? 'active' : ''}`}>
                     <div className="grammar-section">
                       <div className="grammar-content">
-                        {selectedUnit?.grammar?.map((item) => (
+                        {selectedUnit?.grammar?.map((item: any) => (
                           <div key={item.id} className="grammar-item">
                             <div className="grammar-original">
                               <div className="section-header">
@@ -772,7 +708,7 @@ export const LearningCard = () => {
                                 {item.example
                                   .replace(/[\[\]]/g, '')  // 移除方括号
                                   .split(/,(?!\s)|，/)     // 只在逗号后面不是空格的地方分割
-                                  .map((example, i) => (
+                                  .map((example: any, i: number) => (
                                     <div key={i} className="example-item">
                                       {example.trim().replace(/['"]/g, '')}
                                     </div>
@@ -789,7 +725,7 @@ export const LearningCard = () => {
                                 {item.exercise
                                   .replace(/[\[\]]/g, '')  // 移除方括号
                                   .split(/,(?!\s)|，/)     // 只在逗号后面不是空格的地方分割
-                                  .map((exercise, i) => (
+                                  .map((exercise: any, i: number) => (
                                     <div key={i} className="exercise-item">
                                       {exercise.trim().replace(/['"]/g, '')}
                                     </div>
@@ -819,12 +755,102 @@ export const LearningCard = () => {
                     </div>
                   </div>
 
-                  {/* Quiz Section - Slide 3 */}
+                  {/* Stories Section - Slide 3 */}
                   <div className={`slide ${activeSlide === 2 ? 'active' : ''}`}>
-                    <div className="quiz-section">
-                      <div className="quiz-content">
-                        <h3>Quiz</h3>
-                        <p>Test your understanding</p>
+                    <div className="stories-section">
+                      <div className="stories-container">
+                        {/* Card 1: Story Continues */}
+                        <div className="story-card" style={{ backgroundColor: '#f8e4ff' }}>
+                          <div className="card-image-container" style={{ backgroundColor: '#e5c1ff' }}>
+                            <BookOpen size={48} color="#8d4bb9" />
+                          </div>
+                          <div className="card-content">
+                            <h3 className="card-title">Story Continues...</h3>
+                            <p className="card-description">Continue your learning journey with the next part of your current story.</p>
+                            <div className="card-footer">
+                              <div className="card-stats">
+                                <div className="stat-item">
+                                  <Book size={16} />
+                                  <span>12 stories</span>
+                                </div>
+                                <div className="stat-item">
+                                  <CheckCircle size={16} />
+                                  <span>8 quizzes</span>
+                                </div>
+                                <div className="stat-item">
+                                  <BarChart2 size={16} />
+                                  <span>85% correct</span>
+                                </div>
+                              </div>
+                              <div className="time-tag">
+                                <Clock size={14} />
+                                <span>15 min</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card 2: New Story */}
+                        <div className="story-card" style={{ backgroundColor: '#e0f7ff' }}>
+                          <div className="card-image-container" style={{ backgroundColor: '#b8e8ff' }}>
+                            <FileText size={48} color="#0288d1" />
+                          </div>
+                          <div className="card-content">
+                            <h3 className="card-title">New Story</h3>
+                            <p className="card-description">Discover a brand new story with fresh vocabulary and grammar concepts.</p>
+                            <div className="card-footer">
+                              <div className="card-stats">
+                                <div className="stat-item">
+                                  <Book size={16} />
+                                  <span>5 stories</span>
+                                </div>
+                                <div className="stat-item">
+                                  <CheckCircle size={16} />
+                                  <span>10 quizzes</span>
+                                </div>
+                                <div className="stat-item">
+                                  <BarChart2 size={16} />
+                                  <span>92% correct</span>
+                                </div>
+                              </div>
+                              <div className="time-tag">
+                                <Clock size={14} />
+                                <span>20 min</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card 3: Brain Teasers */}
+                        <div className="story-card" style={{ backgroundColor: '#fff0e0' }}>
+                          <div className="card-image-container" style={{ backgroundColor: '#ffe0b2' }}>
+                            <Brain size={48} color="#ed6c02" />
+                          </div>
+                          <div className="card-content">
+                            <h3 className="card-title">Like a Brain Teaser?</h3>
+                            <p className="card-description">Challenge yourself with fun puzzles that test your language skills.</p>
+                            <div className="card-footer">
+                              <div className="card-stats">
+                                <div className="stat-item">
+                                  <Brain size={16} />
+                                  <span>8 puzzles</span>
+                                </div>
+                                <div className="stat-item">
+                                  <CheckCircle size={16} />
+                                  <span>15 quizzes</span>
+                                </div>
+                                <div className="stat-item">
+                                  <BarChart2 size={16} />
+                                  <span>78% correct</span>
+                                </div>
+                              </div>
+                              <div className="time-tag">
+                                <Clock size={14} />
+                                <span>10 min</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -846,7 +872,7 @@ export const LearningCard = () => {
             {/* Vocabulary Section */}
             <div className="vocabulary-section">
               <div className="word-cloud">
-                {selectedUnit?.vocabulary?.map((vocab) => (
+                {selectedUnit?.vocabulary?.map((vocab: any) => (
                   <span 
                     key={vocab.word} 
                     className="word-tag" 

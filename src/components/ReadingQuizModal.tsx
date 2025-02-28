@@ -303,7 +303,7 @@ export const ReadingQuizModal = ({ isOpen, onClose, storyContent, unitId, storyI
           console.error('Error checking existing unicorn records:', countError);
         } else {
           // 如果记录数少于8，则添加新记录
-          if (existingRecords.length < 8) {
+          if (existingRecords.length < 6) {
             const { error } = await supabase
               .from('unicorn_records')
               .insert({
@@ -320,7 +320,7 @@ export const ReadingQuizModal = ({ isOpen, onClose, storyContent, unitId, storyI
               }
             } else {
               // 记录成功，显示祝贺信息
-              toast.success('Perfect score! You earned a unicorn badge!', {
+              toast.success('Perfect score! You got a unicorn!', {
                 icon: '🦄',
                 duration: 5000
               });
@@ -328,13 +328,13 @@ export const ReadingQuizModal = ({ isOpen, onClose, storyContent, unitId, storyI
           } else {
             // 已达到8次上限，显示不同的消息
             toast.success('Perfect score! Great job!', {
-              duration: 3000
+              duration: 5000
             });
           }
         }
       } else {
-        toast.success('Some questions are incorrect. Keep trying!', {
-          duration: 3000
+        toast.success('Some incorrect. Keep trying!', {
+          duration: 5000
         });
       }
       

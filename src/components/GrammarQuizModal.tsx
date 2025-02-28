@@ -324,21 +324,50 @@ export const GrammarQuizModal = ({
   
   const createUnicornRecord = async (finalScore: number) => {
     try {
-      // 创建 unicorn 记录
-      const { error } = await supabase
+      // 只有在得分是满分时才创建记录
+      if (finalScore !== questions.length) return;
+      
+      // 首先检查用户在该单元的语法测验中已有多少次满分记录
+      const { data: existingRecords, error: countError } = await supabase
         .from('unicorn_records')
-        .insert({
-          user_id: userId,
-          unit_id: unitId,
-          record_type: 'grammar-quiz',
-          description: `Completed grammar quiz for "${grammarPoint.title}" with score ${finalScore}/${questions.length}`
-        });
+        .select('id')
+        .eq('user_id', userId)
+        .eq('unit_id', unitId)
+        .eq('quiz_type', 'grammar');
         
-      if (error) throw error;
-      
-      // 显示成功消息
-      toast.success('You earned a unicorn for completing the grammar quiz!');
-      
+      if (countError) {
+        console.error('Error checking existing unicorn records:', countError);
+      } else {
+        // 如果记录数少于5，则添加新记录
+        if (existingRecords.length < 6) {
+          const { error } = await supabase
+            .from('unicorn_records')
+            .insert({
+              user_id: userId,
+              unit_id: unitId,
+              quiz_id: quizId,
+              quiz_type: 'grammar'
+            });
+            
+          if (error) {
+            // 如果是唯一约束冲突，说明已经记录过，不需要显示错误
+            if (error.code !== '23505') { // PostgreSQL 唯一约束冲突的错误代码
+              console.error('Error recording unicorn record:', error);
+            }
+          } else {
+            // 记录成功，显示祝贺信息
+            toast.success('Perfect score! You got a unicorn!', {
+              icon: '🦄',
+              duration: 5000
+            });
+          }
+        } else {
+          // 已达到5次上限，显示不同的消息
+          toast.success('Perfect score! Great job!', {
+            duration: 3000
+          });
+        }
+      }
     } catch (error) {
       console.error("Error creating unicorn record:", error);
     }

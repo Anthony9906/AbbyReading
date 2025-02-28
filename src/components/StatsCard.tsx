@@ -7,6 +7,7 @@ import { LogOut, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import confetti from 'canvas-confetti';
+import { useAppSelector } from "../redux/hooks";
 
 export const StatsCard = () => {
   const navigate = useNavigate();
@@ -15,6 +16,15 @@ export const StatsCard = () => {
   const [claimedGifts, setClaimedGifts] = useState<number[]>([]);
   const [showGiftPopup, setShowGiftPopup] = useState(false);
   const [activeGiftIndex, setActiveGiftIndex] = useState<number | null>(null);
+
+  // 从 Redux 获取数据
+  const { data: units } = useAppSelector((state) => state.units);
+  const { data: unicornRecords } = useAppSelector((state) => state.unicornRecords);
+  
+  // 计算统计数据
+  const completedUnits = units.filter((unit: any) => unit.completed).length;
+  const totalUnits = units.length;
+  const completionPercentage = totalUnits > 0 ? Math.round((completedUnits / totalUnits) * 100) : 0;
 
   useEffect(() => {
     const fetchUnicornCount = async () => {
@@ -64,7 +74,7 @@ export const StatsCard = () => {
   }, []);
 
   // 计算应该显示多少个礼物图标
-  const giftCount = Math.floor(unicornCount / 1);
+  const giftCount = Math.floor(unicornCount / 15);
   
   // 处理礼物图标点击，添加礼花效果
   const handleGiftClick = (index: number) => {
@@ -173,10 +183,10 @@ export const StatsCard = () => {
           <div className="progress-bar-container">
             <div 
               className="progress-bar-fill" 
-              style={{ width: `${Math.min((unicornCount % 30) / 30 * 100, 100)}%` }}
+              style={{ width: `${Math.min((unicornCount % 15) / 15 * 100, 100)}%` }}
             ></div>
           </div>
-          <div className="progress-text">{unicornCount % 30} of 30 to next gift</div>
+          <div className="progress-text">{unicornCount % 15} of 15 to next gift</div>
           
           {/* 礼物图标显示 */}
           {giftCount > 0 && (

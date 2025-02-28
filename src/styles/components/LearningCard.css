@@ -83,6 +83,8 @@
   line-height: 1.8;
   white-space: pre-wrap;
   font-size: 20px;
+  padding: 0 20px;
+  margin-bottom: 20px;
 }
 
 .story-text p {
@@ -522,19 +524,19 @@
 }
 
 .reading-quiz-button {
-  margin-top: 30px;
+  margin: 30px 0;
   background-color: #6B5ECD;
-  color: #ffffffc9;
+  color: #ffffff96;
   border: none;
-  border-radius: 24px;
-  padding: 10px 14px;
+  border-radius: 12px;
+  padding: 18px 14px;
   width: 100%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  font-size: 14px;
+  font-size: 26px;
   font-weight: 500;
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -569,35 +571,6 @@
   opacity: 0.5;
 }
 
-/* 添加 Quiz Stats 样式 */
-.quiz-stats {
-  background-color: #d8d6f3;
-  border-radius: 8px;
-  padding: 10px;
-  margin: 16px;
-  font-size: 14px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.quiz-stat-item {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.quiz-stat-item:last-child {
-  margin-bottom: 0;
-}
-
-.quiz-stat-label {
-  color: #666;
-}
-
-.quiz-stat-value {
-  font-weight: bold;
-  color: #6B5ECD;
-}
-
 /* 添加 Grammar Quiz 按钮样式 */
 .grammar-quiz-button {
   display: flex;
@@ -623,4 +596,138 @@
 
 .grammar-quiz-button svg {
   flex-shrink: 0;
+}
+
+/* Stories Section Styles */
+.stories-section {
+  padding: 20px;
+  width: 100%;
+}
+
+.stories-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+}
+
+.story-card {
+  flex: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.story-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-image-container {
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.card-description {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 16px;
+  flex-grow: 1;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: auto;
+}
+
+.card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.time-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+/* Reading Section Header Styles */
+.reading-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.reading-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+/* Quiz Stats Styles - 移到PDF预览上方 */
+.quiz-stats {
+  background-color: #ffffffb8;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.quiz-stat-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+
+.quiz-stat-item:last-child {
+  margin-bottom: 0;
+}
+
+.quiz-stat-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.quiz-stat-value {
+  color: #333;
+  font-weight: 600;
 }
