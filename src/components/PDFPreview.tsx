@@ -10,31 +10,29 @@ pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 interface PDFPreviewProps {
   url: string;
-  className?: string;
   unitId: string;
   unitTitle: string;
-  containerStyle?: 'small' | 'large';
-  existingStory?: string;
-  fileType: 'reading' | 'report';
+  containerStyle?: string;
+  fileType: string;
+  className?: string;
   onCustomClick?: () => void;
   width?: number;
   height?: number;
   pageNumber?: number;
 }
 
-export const PDFPreview = ({ 
-  url, 
-  className, 
-  containerStyle = 'small', 
-  unitId, 
+export const PDFPreview: React.FC<PDFPreviewProps> = ({
+  url,
+  unitId,
   unitTitle,
-  existingStory,
+  containerStyle = 'small',
   fileType,
+  className,
   onCustomClick,
   width,
   height,
   pageNumber
-}: PDFPreviewProps) => {
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleClick = () => {
@@ -53,12 +51,9 @@ export const PDFPreview = ({
   return (
     <>
       <div 
-        className={`pdf-preview ${containerStyle} ${className || ''}`}
+        className={`pdf-preview-container ${containerStyle} ${className}`}
         onClick={handleClick}
-        style={{
-          width: width ? `${width}px` : undefined,
-          height: height ? `${height}px` : undefined
-        }}
+        style={{ width: `${width}px`, height: `${height}px` }}
       >
         <Document
           file={url}
@@ -86,8 +81,7 @@ export const PDFPreview = ({
           onClose={() => setIsModalOpen(false)}
           unitId={unitId}
           unitTitle={unitTitle}
-          existingStory={existingStory}
-          fileType={fileType}
+          fileType={fileType as 'reading' | 'report'}
         />
       )}
     </>

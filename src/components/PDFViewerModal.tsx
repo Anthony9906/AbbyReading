@@ -15,7 +15,7 @@ interface PDFViewerModalProps {
   unitId: string;
   unitTitle: string;
   existingStory?: string;
-  fileType: 'reading' | 'report';
+  fileType: string;
 }
 
 // 初始化 Gemini API
@@ -360,80 +360,80 @@ export const PDFViewerModal = ({
   };
 
   return (
-    <div className="pdf-modal-overlay">
-      <div className="pdf-modal-container">
-        <div className="modal-header">
-          <div className="header-controls">
+    <div className="pdf-viewer__overlay">
+      <div className="pdf-viewer__container">
+        <div className="pdf-viewer__header">
+          <div className="pdf-viewer__controls">
             <button
               onClick={() => setScale(s => Math.max(0.5, s - 0.1))}
-              className="control-button"
+              className="pdf-viewer__control-button"
             >
-              <ZoomOut className="control-icon" />
+              <ZoomOut className="pdf-viewer__control-icon" />
             </button>
-            <span className="scale-text">{Math.round(scale * 100)}%</span>
+            <span className="pdf-viewer__scale-text">{Math.round(scale * 100)}%</span>
             <button
               onClick={() => setScale(s => Math.min(2, s + 0.1))}
-              className="control-button"
+              className="pdf-viewer__control-button"
             >
-              <ZoomIn className="control-icon" />
+              <ZoomIn className="pdf-viewer__control-icon" />
             </button>
             <button
               onClick={extractTextFromPDF}
-              className="control-button"
+              className="pdf-viewer__control-button"
               disabled={isLoading}
             >
-              <FileText className="control-icon" />
-              <span className="button-text">
+              <FileText className="pdf-viewer__control-icon" />
+              <span className="pdf-viewer__button-text">
                 {fileType === 'reading' ? 'AI 识别课文' : 'AI 识别作业'}
               </span>
             </button>
             {isTextVisible && (
               <button
                 onClick={handleSaveStory}
-                className="control-button"
+                className="pdf-viewer__control-button"
                 disabled={isSaving || !pdfText}
               >
-                <Save className="control-icon" />
-                <span className="button-text">
+                <Save className="pdf-viewer__control-icon" />
+                <span className="pdf-viewer__button-text">
                   {fileType === 'reading' ? '保存故事' : '保存作业'}
                 </span>
-                {isSaving && <Loader2 className="loading-spinner" />}
+                {isSaving && <Loader2 className="pdf-viewer__loading-spinner" />}
               </button>
             )}
           </div>
-          <div className="header-controls">
+          <div className="pdf-viewer__controls">
             <button
               onClick={handleFullscreen}
-              className="control-button"
+              className="pdf-viewer__control-button"
             >
               {isFullscreen ? (
-                <Minimize2 className="control-icon" />
+                <Minimize2 className="pdf-viewer__control-icon" />
               ) : (
-                <Maximize2 className="control-icon" />
+                <Maximize2 className="pdf-viewer__control-icon" />
               )}
             </button>
             <button
               onClick={onClose}
-              className="control-button"
+              className="pdf-viewer__control-button"
             >
-              <X className="control-icon" />
+              <X className="pdf-viewer__control-icon" />
             </button>
           </div>
         </div>
 
-        <div className="modal-content">
-          <div className="pdf-viewer">
+        <div className="pdf-viewer__content">
+          <div className="pdf-viewer__document">
             <Document
               file={url}
               loading={
-                <div className="loading-container">
-                  <Loader2 className="loading-spinner" />
+                <div className="pdf-viewer__loading-container">
+                  <Loader2 className="pdf-viewer__loading-spinner" />
                 </div>
               }
               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
             >
               {Array.from(new Array(numPages), (_, index) => (
-                <div key={`page_${index + 1}`} className="pdf-page">
+                <div key={`page_${index + 1}`} className="pdf-viewer__page" data-page-number={index + 1}>
                   <Page
                     pageNumber={index + 1}
                     scale={scale}
@@ -446,18 +446,18 @@ export const PDFViewerModal = ({
           </div>
 
           {isTextVisible && (
-            <div className="text-sidebar">
-              <div className={`text-content ${isLoading ? 'loading' : ''}`}>
+            <div className="pdf-viewer__sidebar">
+              <div className={`pdf-viewer__text-content ${isLoading ? 'loading' : ''}`}>
                 {isLoading ? (
-                  <div className="text-loading-container">
-                    <Loader2 className="loading-spinner" />
-                    <div className="loading-text">正在识别文本...</div>
+                  <div className="pdf-viewer__text-loading">
+                    <Loader2 className="pdf-viewer__loading-spinner" />
+                    <div className="pdf-viewer__loading-text">正在识别文本...</div>
                   </div>
                 ) : (
                   <textarea
                     value={pdfText}
                     onChange={(e) => setPdfText(e.target.value)}
-                    className="text-area"
+                    className="pdf-viewer__text-area"
                     placeholder="识别的文本将显示在这里..."
                   />
                 )}

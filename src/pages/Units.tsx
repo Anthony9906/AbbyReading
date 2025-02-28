@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { UserHeader } from "../components/UserHeader";
 import { StatsCard } from "../components/StatsCard";
-import { Plus, FileText, FileImage, Settings2, BookOpen, Award, Star } from "lucide-react";
+import { Plus, FileText, FileImage, Settings2, BookOpen, Award, Star, Calendar, CheckCircle, BarChart2, ChevronLeft, ChevronRight } from "lucide-react";
 import { AddUnitModal } from "../components/AddUnitModal";
 import { supabase } from "../lib/supabase";
 import { PDFPreview } from "../components/PDFPreview";
+import { PDFViewerModal } from "../components/PDFViewerModal";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import { fetchUnitsPage, addUnit, editUnit } from "../redux/slices/unitsPageSlice";
 import "../styles/pages/Units.css";
@@ -14,13 +15,32 @@ export default function Units() {
   const { units, status, error } = useAppSelector((state) => state.unitsPage);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<any | null>(null);
+  const [activePreviewTabs, setActivePreviewTabs] = useState<Record<string, 'reading' | 'report'>>({});
+  
+  // 添加 PDFViewerModal 的状态
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState<{
+    url: string;
+    title: string;
+    unitId: string;
+    fileType: string;
+  } | null>(null);
 
   // 在组件挂载时获取单元数据
   useEffect(() => {
     if (status === 'idle') {
       dispatch(fetchUnitsPage());
     }
-  }, [dispatch, status]);
+    
+    // 初始化所有单元的预览标签为 'reading'
+    if (units.length > 0) {
+      const initialTabs: Record<string, 'reading' | 'report'> = {};
+      units.forEach(unit => {
+        initialTabs[unit.id] = 'reading';
+      });
+      setActivePreviewTabs(initialTabs);
+    }
+  }, [dispatch, status, units.length]);
 
   const getFileUrl = (path: string | null) => {
     if (!path) return null;
@@ -30,17 +50,33 @@ export default function Units() {
     return data.publicUrl;
   };
 
+  // 处理 PDF 预览点击事件
+  const handlePdfPreviewClick = (url: string, unitId: string, unitTitle: string, fileType: string) => {
+    setSelectedPdf({
+      url,
+      title: unitTitle,
+      unitId,
+      fileType
+    });
+    setPdfViewerOpen(true);
+  };
+
+  // 关闭 PDF 查看器
+  const handleClosePdfViewer = () => {
+    setPdfViewerOpen(false);
+  };
+
   // 获取单元类型对应的图标和颜色
   const getUnitTypeInfo = (type: string) => {
     switch (type.toLowerCase()) {
       case 'reading':
-        return { icon: <BookOpen size={16} />, color: '#4CAF50' };
+        return { icon: <BookOpen size={12} />, color: '#4CAF50' };
       case 'writing':
-        return { icon: <FileText size={16} />, color: '#2196F3' };
+        return { icon: <FileText size={12} />, color: '#2196F3' };
       case 'speaking':
-        return { icon: <Award size={16} />, color: '#FF9800' };
+        return { icon: <Award size={12} />, color: '#FF9800' };
       default:
-        return { icon: <Star size={16} />, color: '#9C27B0' };
+        return { icon: <Star size={12} />, color: '#9C27B0' };
     }
   };
 
@@ -63,6 +99,23 @@ export default function Units() {
     } catch (error) {
       console.error('Error updating unit:', error);
     }
+  };
+
+  const togglePreviewTab = (unitId: string) => {
+    setActivePreviewTabs(prev => ({
+      ...prev,
+      [unitId]: prev[unitId] === 'reading' ? 'report' : 'reading'
+    }));
+  };
+
+  // 格式化日期
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   // 显示加载状态
@@ -116,106 +169,157 @@ export default function Units() {
                 <p>Start your learning journey by adding your first unit!</p>
               </div>
             ) : (
-              <div className="units-list">
+              <div className="course-units-grid">
                 {units.map((unit) => {
                   const typeInfo = getUnitTypeInfo(unit.type);
+                  const activeTab = activePreviewTabs[unit.id] || 'reading';
+                  
                   return (
-                    <div key={unit.id} className="unit-card">
-                      <div className="unit-content">
-                        <div className="unit-info">
-                          <h2 className="unit-title">{unit.title}</h2>
-                          <div className="unit-tags">
-                            <span className="tag">{unit.unit}</span>
-                            <span className="tag">{unit.week}</span>
-                            <span className="tag" style={{ backgroundColor: `${typeInfo.color}20`, color: typeInfo.color }}>
-                              {typeInfo.icon}
-                              <span className="tag-text">{unit.type}</span>
-                            </span>
+                    <div key={unit.id} className="course-unit-card">
+                      {/* 上半部分：预览区域 */}
+                      <div className="unit-preview-section">
+                        <div className="preview-tabs">
+                          <button 
+                            className={`preview-tab ${activeTab === 'reading' ? 'active' : ''}`}
+                            onClick={() => setActivePreviewTabs({...activePreviewTabs, [unit.id]: 'reading'})}
+                          >
+                            Reading
+                          </button>
+                          <button 
+                            className={`preview-tab ${activeTab === 'report' ? 'active' : ''}`}
+                            onClick={() => setActivePreviewTabs({...activePreviewTabs, [unit.id]: 'report'})}
+                          >
+                            Report
+                          </button>
+                        </div>
+                        
+                        <div className="preview-content">
+                          {activeTab === 'reading' ? (
+                            unit.reading_file ? (
+                              <div className="file-preview">
+                                <PDFPreview 
+                                  url={getFileUrl(unit.reading_file)!} 
+                                  unitId={unit.id}
+                                  unitTitle={unit.title}
+                                  containerStyle="large"
+                                  fileType="reading"
+                                  className="preview-box clickable"
+                                  onCustomClick={() => handlePdfPreviewClick(
+                                    getFileUrl(unit.reading_file)!, 
+                                    unit.id, 
+                                    unit.title,
+                                    "reading"
+                                  )}
+                                  width={280}
+                                  height={180}
+                                />
+                                {unit.story && (
+                                  <div className="has-content-badge">
+                                    <CheckCircle size={14} />
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="empty-preview">
+                                <FileImage size={40} />
+                                <p>No reading material</p>
+                              </div>
+                            )
+                          ) : (
+                            unit.report_file ? (
+                              <div className="file-preview">
+                                <PDFPreview 
+                                  url={getFileUrl(unit.report_file)!} 
+                                  unitId={unit.id}
+                                  unitTitle={unit.title}
+                                  containerStyle="large"
+                                  fileType="report"
+                                  className="preview-box clickable"
+                                  onCustomClick={() => handlePdfPreviewClick(
+                                    getFileUrl(unit.report_file)!, 
+                                    unit.id, 
+                                    unit.title,
+                                    "report"
+                                  )}
+                                  width={280}
+                                  height={180}
+                                />
+                                {unit.weekly_report && (
+                                  <div className="has-content-badge">
+                                    <CheckCircle size={14} />
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="empty-preview">
+                                <FileText size={40} />
+                                <p>No report material</p>
+                              </div>
+                            )
+                          )}
+                        </div>
+                        
+                        <div className="preview-navigation">
+                          <button 
+                            className="nav-button"
+                            onClick={() => togglePreviewTab(unit.id)}
+                          >
+                            {activeTab === 'reading' ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* 中部：标题和单元信息 */}
+                      <div className="unit-info-section">
+                        <h2 className="unit-title">{unit.title}</h2>
+                        <div className="unit-tags">
+                          <span className="unit-tag">{unit.unit}</span>
+                          <span className="unit-tag">{unit.week}</span>
+                          <span 
+                            className="unit-tag type-tag" 
+                            style={{ 
+                              backgroundColor: `${typeInfo.color}20`, 
+                              color: typeInfo.color 
+                            }}
+                          >
+                            {typeInfo.icon}
+                            <span>{unit.type}</span>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* 底部：统计信息和操作 */}
+                      <div className="unit-stats-section">
+                        <div className="unit-dates">
+                          <div className="date-item">
+                            <Calendar size={14} />
+                            <span>{formatDate(unit.begin_date || '')}</span>
+                          </div>
+                          <span className="date-separator">-</span>
+                          <div className="date-item">
+                            <Calendar size={14} />
+                            <span>{formatDate(unit.end_date || '')}</span>
                           </div>
                         </div>
+                        
+                        <div className="unit-quiz-stats">
+                          <div className="quiz-stat">
+                            <CheckCircle size={14} />
+                            <span> {unit.quiz_count || 0}</span>
+                          </div>
+                          <div className="quiz-stat">
+                            <BarChart2 size={14} />
+                            <span> {unit.quiz_accuracy || 0}%</span>
+                          </div>
+                        </div>
+                        
                         <button 
-                          className="edit-button"
+                          className="edit-unit-button"
                           onClick={() => setEditingUnit(unit)}
-                          title="Edit unit"
                         >
-                          <Settings2 className="edit-icon" />
+                          <Settings2 size={16} />
+                          <span>Edit</span>
                         </button>
-                        <div className="unit-status">
-                          <div className="progress-section">
-                            <div className="progress-label">Progress</div>
-                            <div className="progress-bar">
-                              <div 
-                                className="progress-fill" 
-                                style={{ width: `${unit.progress}%` }}
-                              ></div>
-                            </div>
-                            <div className="progress-value">{unit.progress}%</div>
-                          </div>
-                          <div className="file-previews">
-                            <div className={`preview-box ${unit.story ? 'has-story' : ''}`}>
-                              {unit.reading_file ? (
-                                <div className="preview-container">
-                                  {unit.reading_file.toLowerCase().endsWith('.pdf') ? (
-                                    <PDFPreview 
-                                      url={getFileUrl(unit.reading_file)!} 
-                                      className="preview"
-                                      unitId={unit.id}
-                                      unitTitle={unit.title}
-                                      containerStyle="small"
-                                      existingStory={unit.story?.content}
-                                      fileType="reading"
-                                      width={100}
-                                      height={100}
-                                    />
-                                  ) : (
-                                    <img 
-                                      src={getFileUrl(unit.reading_file)!} 
-                                      alt="Reading" 
-                                      className="preview"
-                                    />
-                                  )}
-                                  <div className="preview-label">Reading</div>
-                                </div>
-                              ) : (
-                                <div className="empty-preview">
-                                  <FileImage className="placeholder-icon" />
-                                  <div className="preview-label">Reading</div>
-                                </div>
-                              )}
-                            </div>
-                            <div className={`preview-box ${unit.weekly_report ? 'has-story' : ''}`}>
-                              {unit.report_file ? (
-                                <div className="preview-container">
-                                  {unit.report_file.toLowerCase().endsWith('.pdf') ? (
-                                    <PDFPreview 
-                                      url={getFileUrl(unit.report_file)!} 
-                                      className="preview"
-                                      unitId={unit.id}
-                                      unitTitle={unit.title}
-                                      containerStyle="small"
-                                      existingStory={unit.weekly_report?.original_text}
-                                      fileType="report"
-                                      width={100}
-                                      height={100}
-                                    />
-                                  ) : (
-                                    <img 
-                                      src={getFileUrl(unit.report_file)!} 
-                                      alt="Report" 
-                                      className="preview"
-                                    />
-                                  )}
-                                  <div className="preview-label">Report</div>
-                                </div>
-                              ) : (
-                                <div className="empty-preview">
-                                  <FileText className="placeholder-icon" />
-                                  <div className="preview-label">Report</div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   );
@@ -241,6 +345,18 @@ export default function Units() {
         onAddUnit={handleEditUnit}
         initialData={editingUnit}
       />
+
+      {/* PDF 查看器模态框 */}
+      {pdfViewerOpen && selectedPdf && (
+        <PDFViewerModal
+          isOpen={pdfViewerOpen}
+          onClose={handleClosePdfViewer}
+          url={selectedPdf.url}
+          unitId={selectedPdf.unitId}
+          unitTitle={selectedPdf.title}
+          fileType={selectedPdf.fileType as 'reading' | 'report'}
+        />
+      )}
     </div>
   );
 } 

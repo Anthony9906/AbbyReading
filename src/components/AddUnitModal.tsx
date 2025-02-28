@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import toast from "react-hot-toast";
-import { FileText, X, Loader2 } from "lucide-react";
+import { FileText, X, Loader2, Calendar, Upload } from "lucide-react";
 import { PDFPreview } from "./PDFPreview";
 import "../styles/components/AddUnitModal.css";
 
@@ -81,11 +81,15 @@ const FileUploadArea = ({
       onClick={() => document.getElementById(`file-input-${label}`)?.click()}
     >
       {isUploading ? (
-        <Loader2 className="upload-loader" />
+        <div className="upload-loading">
+          <Loader2 className="upload-loader" />
+          <span>Uploading...</span>
+        </div>
       ) : (
         <>
-          <FileText className="upload-icon" />
+          <Upload className="upload-icon" />
           <p className="upload-text">Drop your {label} here or click to browse</p>
+          <span className="upload-hint">Supports PDF and image files</span>
         </>
       )}
       <input
@@ -111,6 +115,7 @@ export const AddUnitModal = ({ isOpen, onClose, onAddUnit, initialData }: AddUni
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isReadingUploading, setIsReadingUploading] = useState(false);
   const [isReportUploading, setIsReportUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'info' | 'files'>('info');
 
   const getFileUrl = (path: string | null) => {
     if (!path) return null;
@@ -161,6 +166,7 @@ export const AddUnitModal = ({ isOpen, onClose, onAddUnit, initialData }: AddUni
     setEndDate(null);
     setReading(null);
     setWeeklyReport(null);
+    setActiveTab('info');
   };
 
   const handleFileChange = useCallback(async (file: File, type: 'reading' | 'report') => {
@@ -203,6 +209,13 @@ export const AddUnitModal = ({ isOpen, onClose, onAddUnit, initialData }: AddUni
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 基本验证
+    if (!title.trim()) {
+      toast.error('Please enter a title');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -237,170 +250,215 @@ export const AddUnitModal = ({ isOpen, onClose, onAddUnit, initialData }: AddUni
         {isSubmitting && (
           <div className="loading-overlay">
             <Loader2 className="loading-spinner" />
+            <span>{initialData ? 'Updating...' : 'Creating...'}</span>
           </div>
         )}
 
-        <h2 className="modal-title">
-          {initialData ? 'Edit Unit' : 'Add New Unit'}
-        </h2>
+        <div className="modal-header">
+          <h2 className="modal-title">
+            {initialData ? 'Edit Unit' : 'Add New Unit'}
+          </h2>
+          <button 
+            className="close-button"
+            onClick={() => {
+              onClose();
+              resetForm();
+            }}
+            disabled={isSubmitting}
+          >
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="modal-tabs">
+          <button 
+            className={`modal-tab ${activeTab === 'info' ? 'active' : ''}`}
+            onClick={() => setActiveTab('info')}
+          >
+            Unit Information
+          </button>
+          <button 
+            className={`modal-tab ${activeTab === 'files' ? 'active' : ''}`}
+            onClick={() => setActiveTab('files')}
+          >
+            Learning Materials
+          </button>
+        </div>
         
         <form onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Title</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="form-input"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Unit</label>
-              <input
-                type="text"
-                value={unitNumber}
-                onChange={(e) => setUnitNumber(e.target.value)}
-                className="form-input"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Week</label>
-              <input
-                type="text"
-                value={week}
-                onChange={(e) => setWeek(e.target.value)}
-                className="form-input"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Type</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="form-input"
-              >
-                <option value="CET">CET</option>
-                <option value="FET">FET</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Begin Date</label>
-              <DatePicker
-                selected={beginDate}
-                onChange={date => setBeginDate(date)}
-                className="form-input"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">End Date</label>
-              <DatePicker
-                selected={endDate}
-                onChange={date => setEndDate(date)}
-                className="form-input"
-              />
+          <div className={`tab-content ${activeTab === 'info' ? 'active' : ''}`}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Title</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="form-input"
+                  placeholder="Enter unit title"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Unit</label>
+                <input
+                  type="text"
+                  value={unitNumber}
+                  onChange={(e) => setUnitNumber(e.target.value)}
+                  className="form-input"
+                  placeholder="e.g. Unit 1"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Week</label>
+                <input
+                  type="text"
+                  value={week}
+                  onChange={(e) => setWeek(e.target.value)}
+                  className="form-input"
+                  placeholder="e.g. Week 1"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Type</label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="form-input"
+                >
+                  <option value="CET">CET</option>
+                  <option value="FET">FET</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Begin Date</label>
+                <div className="date-picker-wrapper">
+                  <Calendar className="date-icon" size={16} />
+                  <DatePicker
+                    selected={beginDate}
+                    onChange={date => setBeginDate(date)}
+                    className="form-input date-input"
+                    placeholderText="Select start date"
+                    dateFormat="MMM d, yyyy"
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">End Date</label>
+                <div className="date-picker-wrapper">
+                  <Calendar className="date-icon" size={16} />
+                  <DatePicker
+                    selected={endDate}
+                    onChange={date => setEndDate(date)}
+                    className="form-input date-input"
+                    placeholderText="Select end date"
+                    dateFormat="MMM d, yyyy"
+                  />
+                </div>
+              </div>
             </div>
           </div>
-
-          <div className="file-upload-grid">
-            <div className="upload-section">
-              <label className="form-label">Reading</label>
-              {reading ? (
-                <div className="file-preview">
-                  <div className="preview-content">
-                    {reading.preview ? (
-                      <img 
-                        src={reading.preview} 
-                        alt="Preview" 
-                        className="preview-image"
-                      />
-                    ) : reading.path?.toLowerCase().endsWith('.pdf') ? (
-                      <div className="pdf-container">
-                        <PDFPreview
-                          url={getFileUrl(reading.path)!}
-                          className="pdf-preview"
-                          unitId={initialData?.id || ''}
-                          unitTitle={initialData?.title || ''}
-                          containerStyle="large"
-                          fileType="reading"
+          
+          <div className={`tab-content ${activeTab === 'files' ? 'active' : ''}`}>
+            <div className="file-upload-grid">
+              <div className="upload-section">
+                <label className="form-label">Reading Material</label>
+                {reading ? (
+                  <div className="file-preview">
+                    <div className="preview-content">
+                      {reading.preview ? (
+                        <img 
+                          src={reading.preview} 
+                          alt="Preview" 
+                          className="preview-image"
                         />
-                      </div>
-                    ) : (
-                      <FileText className="file-icon" />
-                    )}
+                      ) : reading.path?.toLowerCase().endsWith('.pdf') ? (
+                        <div className="pdf-container">
+                          <PDFPreview
+                            url={getFileUrl(reading.path)!}
+                            className="pdf-preview"
+                            unitId={initialData?.id || ''}
+                            unitTitle={initialData?.title || ''}
+                            containerStyle="large"
+                            fileType="reading"
+                          />
+                        </div>
+                      ) : (
+                        <FileText className="file-icon" />
+                      )}
+                    </div>
+                    <div className="file-info">
+                      <p className="file-name">
+                        {reading.file.name === "existing-reading" 
+                          ? reading.path?.split('/').pop() || ''
+                          : reading.file.name}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setReading(null)}
+                      className="remove-file"
+                    >
+                      <X className="remove-icon" />
+                    </button>
                   </div>
-                  <div className="file-info">
-                    <p className="file-name">
-                      {reading.file.name === "existing-reading" 
-                        ? reading.path?.split('/').pop() || ''
-                        : reading.file.name}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setReading(null)}
-                    className="remove-file"
-                  >
-                    <X className="remove-icon" />
-                  </button>
-                </div>
-              ) : (
-                <FileUploadArea
-                  onFileChange={(file) => handleFileChange(file, 'reading')}
-                  isUploading={isReadingUploading}
-                  label="Reading"
-                />
-              )}
-            </div>
+                ) : (
+                  <FileUploadArea
+                    onFileChange={(file) => handleFileChange(file, 'reading')}
+                    isUploading={isReadingUploading}
+                    label="Reading Material"
+                  />
+                )}
+              </div>
 
-            <div className="upload-section">
-              <label className="form-label">Weekly Report</label>
-              {weeklyReport ? (
-                <div className="file-preview">
-                  <div className="preview-content">
-                    {weeklyReport.preview ? (
-                      <img 
-                        src={weeklyReport.preview} 
-                        alt="Preview" 
-                        className="preview-image"
-                      />
-                    ) : weeklyReport.path?.toLowerCase().endsWith('.pdf') ? (
-                      <div className="pdf-container">
-                        <PDFPreview
-                          url={getFileUrl(weeklyReport.path)!}
-                          className="pdf-preview"
-                          unitId={initialData?.id || ''}
-                          unitTitle={initialData?.title || ''}
-                          containerStyle="large"
-                          fileType="report"
+              <div className="upload-section">
+                <label className="form-label">Weekly Report</label>
+                {weeklyReport ? (
+                  <div className="file-preview">
+                    <div className="preview-content">
+                      {weeklyReport.preview ? (
+                        <img 
+                          src={weeklyReport.preview} 
+                          alt="Preview" 
+                          className="preview-image"
                         />
-                      </div>
-                    ) : (
-                      <FileText className="file-icon" />
-                    )}
+                      ) : weeklyReport.path?.toLowerCase().endsWith('.pdf') ? (
+                        <div className="pdf-container">
+                          <PDFPreview
+                            url={getFileUrl(weeklyReport.path)!}
+                            className="pdf-preview"
+                            unitId={initialData?.id || ''}
+                            unitTitle={initialData?.title || ''}
+                            containerStyle="large"
+                            fileType="report"
+                          />
+                        </div>
+                      ) : (
+                        <FileText className="file-icon" />
+                      )}
+                    </div>
+                    <div className="file-info">
+                      <p className="file-name">
+                        {weeklyReport.file.name === "existing-report" 
+                          ? weeklyReport.path?.split('/').pop() || ''
+                          : weeklyReport.file.name}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setWeeklyReport(null)}
+                      className="remove-file"
+                    >
+                      <X className="remove-icon" />
+                    </button>
                   </div>
-                  <div className="file-info">
-                    <p className="file-name">
-                      {weeklyReport.file.name === "existing-report" 
-                        ? weeklyReport.path?.split('/').pop() || ''
-                        : weeklyReport.file.name}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setWeeklyReport(null)}
-                    className="remove-file"
-                  >
-                    <X className="remove-icon" />
-                  </button>
-                </div>
-              ) : (
-                <FileUploadArea
-                  onFileChange={(file) => handleFileChange(file, 'report')}
-                  isUploading={isReportUploading}
-                  label="Report"
-                />
-              )}
+                ) : (
+                  <FileUploadArea
+                    onFileChange={(file) => handleFileChange(file, 'report')}
+                    isUploading={isReportUploading}
+                    label="Weekly Report"
+                  />
+                )}
+              </div>
             </div>
           </div>
 
@@ -410,7 +468,7 @@ export const AddUnitModal = ({ isOpen, onClose, onAddUnit, initialData }: AddUni
               disabled={isSubmitting}
               className="submit-button"
             >
-              {initialData ? 'Update' : 'Create'}
+              {initialData ? 'Update Unit' : 'Create Unit'}
             </button>
             <button
               type="button"

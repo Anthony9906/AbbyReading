@@ -7,9 +7,12 @@ interface Unit {
   unit: string;
   week: string;
   type: string;
+  begin_date: string;
+  end_date: string;
   reading_file: string | null;
   report_file: string | null;
   progress: number;
+  created_at: string;
   stories?: Array<{
     content: string;
     type: string;
