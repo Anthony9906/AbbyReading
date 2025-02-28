@@ -731,3 +731,40 @@
   color: #333;
   font-weight: 600;
 }
+
+/* 预览切换按钮样式 */
+.preview-toggle-button {
+  background-color: #8175d6;
+  border: 2px solid #6357b3;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #bab2f3;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.preview-toggle-button:hover {
+  background-color: #8d83dc;
+  color: #bab2f3;
+}
+
+/* 添加预览的动画效果 */
+.reading-preview {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

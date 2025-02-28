@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award, Book, CheckCircle, BarChart2, Clock, FileText, Brain, BookOpen } from "lucide-react";
+import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award, Book, CheckCircle, BarChart2, Clock, FileText, Brain, BookOpen, Eye, EyeOff } from "lucide-react";
 import { supabase } from '../lib/supabase';
 import '../styles/components/LearningCard.css';
 import { VocabPopover } from './VocabPopover';
@@ -77,6 +77,7 @@ export const LearningCard = () => {
   });
   const [showGrammarQuiz, setShowGrammarQuiz] = useState(false);
   const [selectedGrammarPoint, setSelectedGrammarPoint] = useState<any>(null);
+  const [showReadingPreview, setShowReadingPreview] = useState(true);
 
   // 从 Redux 获取单元数据
   const { data: units, status } = useAppSelector((state) => state.units);
@@ -545,7 +546,7 @@ export const LearningCard = () => {
                     <div className="reading-section" style={{ position: 'relative' }}>
                       <div className="reading-header">
                         
-                        {/* Reading Quiz Button - 移到标题右侧 */}
+                        {/* Reading Quiz Button */}
                         <button
                           className="reading-quiz-button"
                           onClick={() => setShowReadingQuiz(true)}
@@ -574,14 +575,36 @@ export const LearningCard = () => {
                         </button>
                       </div>
                       
-                      {selectedUnit?.reading_file && (
-                        <div className="reading-preview" style={{
+                      {/* 预览切换按钮 - 放在右下角 */}
+                      <button 
+                        className="preview-toggle-button"
+                        onClick={() => setShowReadingPreview(!showReadingPreview)}
+                        style={{
                           position: 'absolute',
-                          top: '172px',
-                          right: '40px',
-                          zIndex: 10
-                        }}>
-                          {/* Add Quiz Stats - 移到PDF预览上方 */}
+                          right: '80px',
+                          top: '164px',
+                          zIndex: 11
+                        }}
+                      >
+                        {showReadingPreview ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                      
+                      {/* 使用条件渲染控制预览的显示和隐藏 */}
+                      {selectedUnit?.reading_file && (
+                        <div 
+                          className="reading-preview" 
+                          style={{
+                            position: 'absolute',
+                            top: '178px',
+                            right: '40px',
+                            zIndex: 10,
+                            opacity: showReadingPreview ? 1 : 0,
+                            visibility: showReadingPreview ? 'visible' : 'hidden',
+                            transform: showReadingPreview ? 'translateX(0)' : 'translateX(30px)',
+                            transition: 'opacity 0.5s ease, visibility 0.5s ease, transform 0.5s ease',
+                          }}
+                        >
+                          {/* Quiz Stats - 移到PDF预览上方 */}
                           <div className="quiz-stats">
                             <div className="quiz-stat-item">
                               <span className="quiz-stat-label">Quizzes:</span>
@@ -624,7 +647,7 @@ export const LearningCard = () => {
                       }
                       </div>
 
-                      {/* Move PDF Viewer inside reading-section */}
+                      {/* PDF Viewer */}
                       {showPDFViewer && selectedUnit?.reading_file && (
                         <ReadingPDFViewer
                           url={getFileUrl(selectedUnit.reading_file)!}
