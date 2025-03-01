@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, AlertCircle, Volume2, Loader } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Volume2, Loader, Headphones } from 'lucide-react';
 import { speakWithOpenAI } from '../services/speechService';
 import '../styles/components/StoryContinueModal.css';
 
@@ -138,9 +138,10 @@ export const StoryContinueModal: React.FC<StoryContinueModalProps> = ({
             <div className="sc-modal-content">
               {currentView === 'story' && storyContent && (
                 <div className="sc-story-content">
-                  {/* 添加文本选择提示 */}
+                  {/* 优化的文本选择提示 */}
                   <div className="sc-text-selection-hint">
-                    <p>Select text to hear it read aloud</p>
+                    <Headphones size={20} className="sc-hint-icon" />
+                    <p>Select any words to hear them read aloud!</p>
                   </div>
                   
                   {/* 显示选中文本的音频控制按钮 */}

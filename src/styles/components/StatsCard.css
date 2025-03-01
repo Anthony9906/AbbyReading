@@ -385,4 +385,134 @@
 
 .star3 {
   top: 30%;
+}
+
+/* 上传漫画按钮样式 */
+.stats-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.stats-action-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-comic-button {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.upload-comic-button:hover {
+  background-color: #e0e0e0;
+}
+
+.logout-button {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.logout-button:hover {
+  background-color: #ffcdd2;
+}
+
+/* 漫画上传模态框样式 */
+.comic-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.comic-modal {
+  background-color: white;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: comicModalFadeIn 0.3s ease;
+}
+
+@keyframes comicModalFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.comic-modal h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.comic-name-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin: 16px 0;
+  transition: border-color 0.2s;
+}
+
+.comic-name-input:focus {
+  border-color: #2196f3;
+  outline: none;
+}
+
+.comic-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.comic-cancel-button,
+.comic-upload-confirm-button {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.comic-cancel-button {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.comic-cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+.comic-upload-confirm-button {
+  background-color: #2196f3;
+  color: white;
+  border: none;
+}
+
+.comic-upload-confirm-button:hover:not(:disabled) {
+  background-color: #1976d2;
+}
+
+.comic-upload-confirm-button:disabled {
+  background-color: #bbdefb;
+  cursor: not-allowed;
 } 

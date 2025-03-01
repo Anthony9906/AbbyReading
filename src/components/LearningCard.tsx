@@ -1,8 +1,7 @@
-"use client";
 
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award, Book, CheckCircle, BarChart2, Clock, Brain, BookOpen, Eye, EyeOff, Music, Cat, MessageCircle, Bird, Squirrel, TentTree } from "lucide-react";
-import { supabase } from '../lib/supabase';
 import '../styles/components/LearningCard.css';
 import { VocabPopover } from './VocabPopover';
 import OpenAI from 'openai';
@@ -18,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { generateStoryContinuation } from '../services/aiService';
 import { saveStoryContinuation, saveQuizSubmission } from '../services/storyServices';
 import { StoryContinueModal } from './StoryContinueModal';
+import { supabase } from '../lib/supabase';
 
 interface VocabWord {
   word: string;
@@ -90,6 +90,10 @@ export const LearningCard = () => {
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [currentStoryContinueId, setCurrentStoryContinueId] = useState<string | null>(null);
   const { user } = useAuth();
+  const [comicBooks, setComicBooks] = useState<any[]>([]);
+  const [showComicPDFViewer, setShowComicPDFViewer] = useState(false);
+  const [currentComicUrl, setCurrentComicUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // 从 Redux 获取单元数据
   const { data: units, status } = useAppSelector((state) => state.units);
@@ -669,19 +673,6 @@ export const LearningCard = () => {
     return cleaned;
   };
 
-  // 辅助函数：从故事中提取角色（简化版）
-  const extractCharactersFromStory = (storyContent: string) => {
-    // 这是一个简化的实现，实际应用中可能需要更复杂的逻辑
-    // 例如使用NLP或者预定义的角色列表
-    const words = storyContent.split(/\s+/);
-    const potentialCharacters = words
-      .filter(word => word.length > 1 && /^[A-Z]/.test(word))
-      .filter(word => !['I', 'The', 'A', 'An', 'In', 'On', 'At', 'To', 'And'].includes(word));
-    
-    // 去重并限制数量
-    return [...new Set(potentialCharacters)].slice(0, 5);
-  };
-
   // 处理问答提交
   const handleQuizSubmission = async (answers: any[]) => {
     if (!user || !currentStoryContinueId) return;
@@ -700,6 +691,43 @@ export const LearningCard = () => {
       });
     } catch (error) {
       console.error('Error saving quiz submission:', error);
+    }
+  };
+
+  // 处理漫画卡片点击
+  const handleComicCardClick = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true); // 添加一个加载状态
+      
+      // 获取用户上传的漫画书
+      const { data: comics, error } = await supabase
+        .from('comic_books')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (!comics || comics.length === 0) {
+        toast.error('You have no comic books yet. Upload one to get started!');
+        return;
+      }
+      
+      // 设置漫画书列表并显示PDF查看器
+      setComicBooks(comics);
+      setShowComicPDFViewer(true);
+      
+      // 默认打开最新的漫画书
+      if (comics.length > 0) {
+        setCurrentComicUrl(comics[0].file_url);
+      }
+    } catch (error) {
+      console.error('Error fetching comic books:', error);
+      toast.error('Failed to load comic books. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1194,7 +1222,11 @@ export const LearningCard = () => {
                         </div>
                         
                         {/* Card 5: Comic Books */}
-                        <div className="story-item" style={{ backgroundColor: '#ffebee' }}>
+                        <div 
+                          className="story-item" 
+                          style={{ backgroundColor: '#ffebee' }}
+                          onClick={handleComicCardClick}
+                        >
                           <div className="story-item__image-wrapper" style={{ backgroundColor: '#ffcdd2' }}>
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#ffcdd2' }}></div>
                             <TentTree size={48} color="#c62828" />
@@ -1469,6 +1501,18 @@ export const LearningCard = () => {
           storyContent={storyContinueContent}
           onSubmitAnswers={handleQuizSubmission}
           isLoading={isGeneratingStory}
+        />
+      )}
+
+      {showComicPDFViewer && currentComicUrl && (
+        <ReadingPDFViewer
+          url={currentComicUrl}
+          isOpen={showComicPDFViewer}
+          onClose={() => setShowComicPDFViewer(false)}
+          initialPage={1}
+          comicBooks={comicBooks}
+          onComicSelect={(url) => setCurrentComicUrl(url)}
+          isComicBook={true}
         />
       )}
     </div>

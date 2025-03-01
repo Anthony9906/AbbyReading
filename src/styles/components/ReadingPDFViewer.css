@@ -181,4 +181,111 @@
   .page-info {
     font-size: 12px;
   }
+}
+
+/* 添加漫画书列表相关样式 */
+.comic-list-toggle-button {
+  background: none;
+  border: none;
+  color: white;
+  margin-left: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.comic-list-toggle-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.comic-books-sidebar {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  bottom: 0;
+  width: 250px;
+  background-color: #f5f5f5;
+  border-right: 1px solid #ddd;
+  overflow-y: auto;
+  z-index: 10;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.comic-books-sidebar h3 {
+  padding: 15px;
+  margin: 0;
+  background-color: #e0e0e0;
+  border-bottom: 1px solid #ddd;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.comic-books-list {
+  padding: 10px;
+}
+
+.comic-book-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.comic-book-item:hover {
+  background-color: #e0e0e0;
+}
+
+.comic-book-thumbnail {
+  width: 40px;
+  height: 40px;
+  background-color: #ddd;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+
+.comic-book-info {
+  flex: 1;
+}
+
+.comic-book-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.comic-book-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+/* 调整 PDF 内容区域，以适应侧边栏 */
+.reading-pdf-content {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+/* 当显示漫画书列表时调整内容区域 */
+.comic-books-sidebar + .reading-pdf-content {
+  margin-left: 250px;
 } 

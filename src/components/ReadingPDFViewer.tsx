@@ -3,7 +3,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import '../styles/components/ReadingPDFViewer.css';
-import { X, ZoomIn, ZoomOut, Maximize, Minimize, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, Maximize, Minimize, RotateCw, ChevronLeft, ChevronRight, Book } from 'lucide-react';
 
 // 设置 PDF.js worker 路径
 pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
@@ -13,17 +13,21 @@ interface ReadingPDFViewerProps {
   isOpen: boolean;
   onClose: () => void;
   initialPage?: number;
+  comicBooks?: any[];
+  onComicSelect?: (url: string) => void;
+  isComicBook?: boolean;
 }
 
-export const ReadingPDFViewer = ({ url, isOpen, onClose, initialPage }: ReadingPDFViewerProps) => {
+export const ReadingPDFViewer = ({ url, isOpen, onClose, initialPage, comicBooks = [], onComicSelect, isComicBook = false }: ReadingPDFViewerProps) => {
   const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
+  const [pageNumber, setPageNumber] = useState(initialPage || 1);
   const [scale, setScale] = useState(1.0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [rotation, setRotation] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [pdfDimensions, setPdfDimensions] = useState({ width: 0, height: 0 });
+  const [showComicList, setShowComicList] = useState<boolean>(false);
   
   // 监听容器大小变化
   useEffect(() => {
@@ -116,6 +120,17 @@ export const ReadingPDFViewer = ({ url, isOpen, onClose, initialPage }: ReadingP
     };
   }, [isFullscreen, onClose]);
 
+  const toggleComicList = () => {
+    setShowComicList(!showComicList);
+  };
+
+  const selectComic = (comicUrl: string) => {
+    if (onComicSelect) {
+      onComicSelect(comicUrl);
+    }
+    setShowComicList(false);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -123,7 +138,7 @@ export const ReadingPDFViewer = ({ url, isOpen, onClose, initialPage }: ReadingP
       <div className="pdf-viewer-container">
         <div className="pdf-viewer-header">
           <div className="header-left">
-            <h3>Reading Material</h3>
+            <h3>{isComicBook ? 'Comic Book Reader' : 'Reading Material'}</h3>
             
             {/* 将分页控件移到顶部 */}
             {numPages && numPages > 1 && (
@@ -148,6 +163,17 @@ export const ReadingPDFViewer = ({ url, isOpen, onClose, initialPage }: ReadingP
                   <ChevronRight size={18} />
                 </button>
               </div>
+            )}
+            
+            {/* 添加漫画书列表按钮 */}
+            {isComicBook && comicBooks && comicBooks.length > 0 && (
+              <button 
+                className="comic-list-toggle-button"
+                onClick={toggleComicList}
+                title="Show Comic Books"
+              >
+                <Book size={20} />
+              </button>
             )}
           </div>
           
@@ -190,6 +216,30 @@ export const ReadingPDFViewer = ({ url, isOpen, onClose, initialPage }: ReadingP
             </button>
           </div>
         </div>
+        
+        {/* 漫画书列表侧边栏 */}
+        {isComicBook && showComicList && (
+          <div className="comic-books-sidebar">
+            <h3>Your Comic Books</h3>
+            <div className="comic-books-list">
+              {comicBooks.map((comic) => (
+                <div 
+                  key={comic.id} 
+                  className="comic-book-item"
+                  onClick={() => selectComic(comic.file_url)}
+                >
+                  <div className="comic-book-thumbnail">
+                    <Book size={24} />
+                  </div>
+                  <div className="comic-book-info">
+                    <h4>{comic.name}</h4>
+                    <p>{new Date(comic.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         <div className="pdf-document-container" ref={containerRef}>
           <Document

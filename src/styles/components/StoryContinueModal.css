@@ -95,9 +95,13 @@
 }
 
 .sc-story-text {
-  line-height: 1.6;
+  font-size: 1.2rem;
+  line-height: 1.7;
   color: #333;
-  font-size: 1.1rem;
+  background-color: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .sc-story-text p {
@@ -105,8 +109,7 @@
 }
 
 .sc-vocabulary-used {
-  margin-top: 20px;
-  padding-top: 20px;
+  padding: 10px 20px;
   border-top: 1px solid #eee;
 }
 
@@ -123,12 +126,22 @@
 }
 
 .sc-vocabulary-tag {
-  background-color: #f0e6f7;
-  color: #8d4bb9;
-  padding: 6px 12px;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
   border-radius: 20px;
-  font-size: 0.9rem;
+  padding: 6px 14px;
+  margin: 4px;
+  font-size: 0.95rem;
   font-weight: 500;
+  display: inline-block;
+  transition: all 0.2s;
+}
+
+.sc-vocabulary-tag:hover {
+  background-color: #c8e6c9;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
 .sc-quiz-content {
@@ -158,7 +171,7 @@
   border: 1px solid #eee;
   border-radius: 12px;
   padding: 20px;
-  background-color: #fff;
+  background-color: #f4f1f9;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -166,6 +179,11 @@
   margin-top: 0;
   color: #8d4bb9;
   font-size: 1.2rem;
+}
+
+.sc-quiz-question p {
+    font-size: 1.2rem;
+    margin-top: 6px;
 }
 
 .sc-quiz-options {
@@ -211,11 +229,11 @@
   align-items: center;
   width: 28px;
   height: 28px;
-  background-color: #eee;
+  background-color: #a978ca;
   border-radius: 50%;
   margin-right: 12px;
   font-weight: 600;
-  color: #555;
+  color: #fff;
 }
 
 .sc-quiz-option.selected .sc-option-letter {
@@ -328,64 +346,110 @@
   }
 }
 
-/* 添加音频相关样式 */
+/* 优化文本选择提示样式 */
 .sc-text-selection-hint {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 8px 16px;
-  margin-bottom: 16px;
-  text-align: center;
-  color: #666;
-  font-size: 0.9rem;
+  background-color: #fff8e1; /* 温暖的黄色背景 */
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5c4037; /* 温暖的棕色文字 */
+  font-size: 1rem;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  border: 2px dashed #ffcc80; /* 虚线边框 */
+  transition: all 0.3s ease;
 }
 
+.sc-text-selection-hint:hover {
+  background-color: #ffecb3;
+  transform: scale(1.02);
+}
+
+.sc-hint-icon {
+  color: #ff9800; /* 橙色图标 */
+  margin-right: 10px;
+  animation: scPulse 2s infinite;
+}
+
+.sc-text-selection-hint p {
+  margin: 0;
+  font-weight: 500;
+  font-size: 1.05rem;
+}
+
+/* 添加脉冲动画 */
+@keyframes scPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* 优化音频控制样式 */
 .sc-audio-controls {
-  background-color: #f0e6f7;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 20px;
+  background-color: #e3f2fd; /* 淡蓝色背景 */
+  border-radius: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  animation: scFadeIn 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: scBounceIn 0.5s ease;
+  border: 2px solid #bbdefb;
+}
+
+@keyframes scBounceIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .sc-selected-text {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   text-align: center;
+  font-size: 24px;
   font-style: italic;
-  color: #333;
-}
-
-.sc-selected-text p {
-  margin: 0;
-  line-height: 1.4;
+  color: #26679d;
+  background-color: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  width: 100%;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .sc-play-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  background-color: #8d4bb9;
+  gap: 10px;
+  background-color: #4caf50; /* 绿色按钮 */
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  border-radius: 30px; /* 圆形按钮 */
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
 }
 
 .sc-play-button:hover:not(:disabled) {
-  background-color: #7b3da3;
+  background-color: #43a047;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(76, 175, 80, 0.4);
+}
+
+.sc-play-button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
 }
 
 .sc-play-button:disabled {
-  background-color: #b794d4;
+  background-color: #a5d6a7;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .sc-loading-icon {

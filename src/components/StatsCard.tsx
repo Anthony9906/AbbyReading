@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import '../styles/components/StatsCard.css';
 import { supabase } from '../lib/supabase';
-import { LogOut, Gift } from 'lucide-react';
+import { LogOut, Gift, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import confetti from 'canvas-confetti';
@@ -16,6 +16,12 @@ export const StatsCard = () => {
   const [claimedGifts, setClaimedGifts] = useState<number[]>([]);
   const [showGiftPopup, setShowGiftPopup] = useState(false);
   const [activeGiftIndex, setActiveGiftIndex] = useState<number | null>(null);
+  
+  // 添加上传漫画相关状态
+  const [isUploadingComic, setIsUploadingComic] = useState(false);
+  const [showComicModal, setShowComicModal] = useState(false);
+  const [comicName, setComicName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 从 Redux 获取数据
   const { data: units } = useAppSelector((state) => state.units);
@@ -132,6 +138,109 @@ export const StatsCard = () => {
     } catch (error) {
       console.error('Error claiming gift:', error);
       toast.error('Failed to claim gift');
+    }
+  };
+
+  // 添加上传漫画相关函数
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // 检查文件类型
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file');
+      return;
+    }
+    
+    // 显示模态框以输入漫画名称
+    setShowComicModal(true);
+  };
+
+  const handleComicUpload = async () => {
+    if (!comicName.trim()) {
+      toast.error('Please provide a name for your comic book');
+      return;
+    }
+    
+    if (!fileInputRef.current?.files?.[0]) {
+      toast.error('Please select a PDF file to upload');
+      return;
+    }
+    
+    try {
+      setIsUploadingComic(true);
+      
+      // 获取当前用户
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error("User error:", userError);
+        throw userError;
+      }
+      
+      if (!userData?.user) {
+        toast.error('You must be logged in to upload a comic book');
+        return;
+      }
+      
+      const file = fileInputRef.current.files[0];
+      
+      // 1. 上传文件到 Supabase Storage
+      const fileName = `${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('comic_books')
+        .upload(fileName, file);
+        
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw uploadError;
+      }
+      
+      // 2. 获取文件的公共URL
+      const { data: urlData } = await supabase.storage
+        .from('comic_books')
+        .getPublicUrl(fileName);
+        
+      const publicUrl = urlData?.publicUrl;
+      console.log("Public URL:", publicUrl);
+      
+      // 3. 将记录保存到数据库 - 使用最简单的方式
+      const { data: comicData, error: dbError } = await supabase
+        .from('comic_books')
+        .insert({
+          user_id: userData.user.id,
+          name: comicName,
+          file_path: fileName,
+          file_url: publicUrl || '',
+          created_at: new Date().toISOString()
+        });
+        
+      if (dbError) {
+        console.error("Database error details:", dbError);
+        throw dbError;
+      }
+      
+      console.log("Comic data inserted successfully:", comicData);
+      
+      toast.success('Comic book uploaded successfully!');
+      setShowComicModal(false);
+      setComicName('');
+      
+      // 重置文件输入
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error uploading comic book:', error);
+      toast.error(`Failed to upload comic book: ${error instanceof Error ? error.message : 'Please try again'}`);
+    } finally {
+      setIsUploadingComic(false);
     }
   };
 
@@ -285,14 +394,81 @@ export const StatsCard = () => {
         </div>
       </div>
       
-      {/* Logout Button */}
-      <button 
-        onClick={handleLogout}
-        className="logout-button"
-      >
-        <LogOut size={16} />
-        <span>Logout</span>
-      </button>
+      {/* 添加上传漫画和登出按钮 */}
+      <div className="stats-card-actions">
+        <button 
+          className="stats-action-button upload-comic-button"
+          onClick={handleUploadClick}
+          title="Upload Comic Book"
+        >
+          <Upload size={16} />
+          <span>Upload Comic</span>
+        </button>
+        
+        <button 
+          onClick={handleLogout}
+          className="logout-button"
+        >
+          <LogOut size={16} />
+          <span>Logout</span>
+        </button>
+      </div>
+      
+      {/* 隐藏的文件输入 */}
+      <input 
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        accept="application/pdf"
+        onChange={handleFileChange}
+      />
+      
+      {/* 添加漫画上传模态框 */}
+      {showComicModal && (
+        <div className="comic-modal-overlay">
+          <div className="comic-modal">
+            <h3>Upload Comic Book</h3>
+            <p>Give your comic book a name:</p>
+            
+            <input
+              type="text"
+              value={comicName}
+              onChange={(e) => setComicName(e.target.value)}
+              placeholder="Enter comic book name"
+              className="comic-name-input"
+              autoFocus
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && comicName.trim() && !isUploadingComic) {
+                  handleComicUpload();
+                }
+              }}
+            />
+            
+            <div className="comic-modal-buttons">
+              <button 
+                className="comic-cancel-button"
+                onClick={() => {
+                  setShowComicModal(false);
+                  setComicName('');
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+              >
+                Cancel
+              </button>
+              
+              <button 
+                className="comic-upload-confirm-button"
+                onClick={handleComicUpload}
+                disabled={!comicName.trim() || isUploadingComic}
+              >
+                {isUploadingComic ? 'Uploading...' : 'Upload'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

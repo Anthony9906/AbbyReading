@@ -14,7 +14,6 @@ import {
   selectUserStats 
 } from "../redux/selectors";
 import "../styles/pages/Home.css";
-import { Loader2 } from "lucide-react";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { PageLoader } from "../components/PageLoader";
 
