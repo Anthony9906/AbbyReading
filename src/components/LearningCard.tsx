@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award, Book, CheckCircle, BarChart2, Clock, FileText, Brain, BookOpen, Eye, EyeOff } from "lucide-react";
+import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award, Book, CheckCircle, BarChart2, Clock, FileText, Brain, BookOpen, Eye, EyeOff, Music, Cat, MessageCircle } from "lucide-react";
 import { supabase } from '../lib/supabase';
 import '../styles/components/LearningCard.css';
 import { VocabPopover } from './VocabPopover';
@@ -824,31 +824,38 @@ export const LearningCard = () => {
                   {/* Stories Section - Slide 3 */}
                   <div className={`slide ${activeSlide === 2 ? 'active' : ''}`}>
                     <div className="stories-section">
-                      <div className="stories-container">
+                      <div className="story-grid">
                         {/* Card 1: Story Continues */}
-                        <div className="story-card" style={{ backgroundColor: '#f8e4ff' }}>
-                          <div className="card-image-container" style={{ backgroundColor: '#e5c1ff' }}>
+                        <div className="story-item" style={{ backgroundColor: '#f8e4ff' }}>
+                          <div className="story-item__image-wrapper" style={{ backgroundColor: '#e5c1ff' }}>
+                            <div className="story-item__glow-effect" style={{ backgroundColor: '#e5c1ff' }}></div>
                             <BookOpen size={48} color="#8d4bb9" />
                           </div>
-                          <div className="card-content">
-                            <h3 className="card-title">Story Continues...</h3>
-                            <p className="card-description">Continue your learning journey with the next part of your current story.</p>
-                            <div className="card-footer">
-                              <div className="card-stats">
-                                <div className="stat-item">
-                                  <Book size={16} />
+                          <div className="story-item__content">
+                            <h3 className="story-item__title">Story Continues...</h3>
+                            <p className="story-item__description">Continue your learning journey with the next part of your current story.</p>
+                            <div className="story-item__footer">
+                              <div className="story-item__metrics">
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <Book size={16} />
+                                  </div>
                                   <span>12 stories</span>
                                 </div>
-                                <div className="stat-item">
-                                  <CheckCircle size={16} />
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <CheckCircle size={16} />
+                                  </div>
                                   <span>8 quizzes</span>
                                 </div>
-                                <div className="stat-item">
-                                  <BarChart2 size={16} />
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <BarChart2 size={16} />
+                                  </div>
                                   <span>85% correct</span>
                                 </div>
                               </div>
-                              <div className="time-tag">
+                              <div className="story-item__duration">
                                 <Clock size={14} />
                                 <span>15 min</span>
                               </div>
@@ -857,29 +864,36 @@ export const LearningCard = () => {
                         </div>
 
                         {/* Card 2: New Story */}
-                        <div className="story-card" style={{ backgroundColor: '#e0f7ff' }}>
-                          <div className="card-image-container" style={{ backgroundColor: '#b8e8ff' }}>
+                        <div className="story-item" style={{ backgroundColor: '#e0f7ff' }}>
+                          <div className="story-item__image-wrapper" style={{ backgroundColor: '#b8e8ff' }}>
+                            <div className="story-item__glow-effect" style={{ backgroundColor: '#b8e8ff' }}></div>
                             <FileText size={48} color="#0288d1" />
                           </div>
-                          <div className="card-content">
-                            <h3 className="card-title">New Story</h3>
-                            <p className="card-description">Discover a brand new story with fresh vocabulary and grammar concepts.</p>
-                            <div className="card-footer">
-                              <div className="card-stats">
-                                <div className="stat-item">
-                                  <Book size={16} />
+                          <div className="story-item__content">
+                            <h3 className="story-item__title">New Story</h3>
+                            <p className="story-item__description">Discover a brand new story with fresh vocabulary and grammar concepts.</p>
+                            <div className="story-item__footer">
+                              <div className="story-item__metrics">
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <Book size={16} />
+                                  </div>
                                   <span>5 stories</span>
                                 </div>
-                                <div className="stat-item">
-                                  <CheckCircle size={16} />
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <CheckCircle size={16} />
+                                  </div>
                                   <span>10 quizzes</span>
                                 </div>
-                                <div className="stat-item">
-                                  <BarChart2 size={16} />
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <BarChart2 size={16} />
+                                  </div>
                                   <span>92% correct</span>
                                 </div>
                               </div>
-                              <div className="time-tag">
+                              <div className="story-item__duration">
                                 <Clock size={14} />
                                 <span>20 min</span>
                               </div>
@@ -888,31 +902,152 @@ export const LearningCard = () => {
                         </div>
 
                         {/* Card 3: Brain Teasers */}
-                        <div className="story-card" style={{ backgroundColor: '#fff0e0' }}>
-                          <div className="card-image-container" style={{ backgroundColor: '#ffe0b2' }}>
+                        <div className="story-item" style={{ backgroundColor: '#fff0e0' }}>
+                          <div className="story-item__image-wrapper" style={{ backgroundColor: '#ffe0b2' }}>
+                            <div className="story-item__glow-effect" style={{ backgroundColor: '#ffe0b2' }}></div>
                             <Brain size={48} color="#ed6c02" />
                           </div>
-                          <div className="card-content">
-                            <h3 className="card-title">Like a Brain Teaser?</h3>
-                            <p className="card-description">Challenge yourself with fun puzzles that test your language skills.</p>
-                            <div className="card-footer">
-                              <div className="card-stats">
-                                <div className="stat-item">
-                                  <Brain size={16} />
+                          <div className="story-item__content">
+                            <h3 className="story-item__title">Like a Brain Teaser?</h3>
+                            <p className="story-item__description">Challenge yourself with fun puzzles that test your language skills.</p>
+                            <div className="story-item__footer">
+                              <div className="story-item__metrics">
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <Brain size={16} />
+                                  </div>
                                   <span>8 puzzles</span>
                                 </div>
-                                <div className="stat-item">
-                                  <CheckCircle size={16} />
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <CheckCircle size={16} />
+                                  </div>
                                   <span>15 quizzes</span>
                                 </div>
-                                <div className="stat-item">
-                                  <BarChart2 size={16} />
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <BarChart2 size={16} />
+                                  </div>
                                   <span>78% correct</span>
                                 </div>
                               </div>
-                              <div className="time-tag">
+                              <div className="story-item__duration">
                                 <Clock size={14} />
                                 <span>10 min</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Card 4: Play a Music */}
+                        <div className="story-item" style={{ backgroundColor: '#e8f5e9' }}>
+                          <div className="story-item__image-wrapper" style={{ backgroundColor: '#c8e6c9' }}>
+                            <div className="story-item__glow-effect" style={{ backgroundColor: '#c8e6c9' }}></div>
+                            <Music size={48} color="#2e7d32" />
+                          </div>
+                          <div className="story-item__content">
+                            <h3 className="story-item__title">Play a Music</h3>
+                            <p className="story-item__description">Learn language through music and songs with lyrics that reinforce vocabulary.</p>
+                            <div className="story-item__footer">
+                              <div className="story-item__metrics">
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <Music size={16} />
+                                  </div>
+                                  <span>7 songs</span>
+                                </div>
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <CheckCircle size={16} />
+                                  </div>
+                                  <span>12 quizzes</span>
+                                </div>
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <BarChart2 size={16} />
+                                  </div>
+                                  <span>88% correct</span>
+                                </div>
+                              </div>
+                              <div className="story-item__duration">
+                                <Clock size={14} />
+                                <span>18 min</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Card 5: Comic Books */}
+                        <div className="story-item" style={{ backgroundColor: '#ffebee' }}>
+                          <div className="story-item__image-wrapper" style={{ backgroundColor: '#ffcdd2' }}>
+                            <div className="story-item__glow-effect" style={{ backgroundColor: '#ffcdd2' }}></div>
+                            <BookOpen size={48} color="#c62828" />
+                          </div>
+                          <div className="story-item__content">
+                            <h3 className="story-item__title">Comic Books</h3>
+                            <p className="story-item__description">Learn through visual storytelling with fun comics that make vocabulary memorable.</p>
+                            <div className="story-item__footer">
+                              <div className="story-item__metrics">
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <BookOpen size={16} />
+                                  </div>
+                                  <span>9 comics</span>
+                                </div>
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <CheckCircle size={16} />
+                                  </div>
+                                  <span>14 quizzes</span>
+                                </div>
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <BarChart2 size={16} />
+                                  </div>
+                                  <span>82% correct</span>
+                                </div>
+                              </div>
+                              <div className="story-item__duration">
+                                <Clock size={14} />
+                                <span>25 min</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Card 6: Talk with Cat */}
+                        <div className="story-item" style={{ backgroundColor: '#e3f2fd' }}>
+                          <div className="story-item__image-wrapper" style={{ backgroundColor: '#bbdefb' }}>
+                            <div className="story-item__glow-effect" style={{ backgroundColor: '#bbdefb' }}></div>
+                            <Cat size={48} color="#1565c0" />
+                          </div>
+                          <div className="story-item__content">
+                            <h3 className="story-item__title">Talk with Cat</h3>
+                            <p className="story-item__description">Practice conversation skills with an AI cat that responds to your language learning.</p>
+                            <div className="story-item__footer">
+                              <div className="story-item__metrics">
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <MessageCircle size={16} />
+                                  </div>
+                                  <span>20 topics</span>
+                                </div>
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <CheckCircle size={16} />
+                                  </div>
+                                  <span>8 quizzes</span>
+                                </div>
+                                <div className="story-item__metric">
+                                  <div className="story-item__metric-icon">
+                                    <BarChart2 size={16} />
+                                  </div>
+                                  <span>90% correct</span>
+                                </div>
+                              </div>
+                              <div className="story-item__duration">
+                                <Clock size={14} />
+                                <span>15 min</span>
                               </div>
                             </div>
                           </div>

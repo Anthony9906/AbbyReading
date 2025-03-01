@@ -9,6 +9,8 @@ import { PDFViewerModal } from "../components/PDFViewerModal";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import { fetchUnitsPage, addUnit, editUnit } from "../redux/slices/unitsPageSlice";
 import "../styles/pages/Units.css";
+import { ErrorMessage } from "../components/ErrorMessage";
+import { PageLoader } from "../components/PageLoader";
 
 export default function Units() {
   const dispatch = useAppDispatch();
@@ -42,6 +44,20 @@ export default function Units() {
     }
   }, [dispatch, status, units.length]);
 
+  // 显示加载状态
+  if (status === 'loading' && units.length === 0) {
+    return <PageLoader message="Loading your learning units..." />;
+  }
+
+  // 显示错误信息
+  if (status === 'failed' && error) {
+    return (
+      <div className="units-page error">
+        <div className="error-message">Oops! Something went wrong: {error}</div>
+      </div>
+    );
+  }
+  
   const getFileUrl = (path: string | null) => {
     if (!path) return null;
     const { data } = supabase.storage
@@ -129,11 +145,7 @@ export default function Units() {
 
   // 显示错误信息
   if (status === 'failed' && error) {
-    return (
-      <div className="units-page error">
-        <div className="error-message">Oops! Something went wrong: {error}</div>
-      </div>
-    );
+    return <ErrorMessage message={error} onRetry={() => dispatch(fetchUnitsPage())} />;
   }
 
   return (

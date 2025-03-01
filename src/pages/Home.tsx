@@ -15,6 +15,8 @@ import {
 } from "../redux/selectors";
 import "../styles/pages/Home.css";
 import { Loader2 } from "lucide-react";
+import { ErrorMessage } from "../components/ErrorMessage";
+import { PageLoader } from "../components/PageLoader";
 
 export default function Home() {
   const dispatch = useAppDispatch();
@@ -48,14 +50,14 @@ export default function Home() {
     }
   }, [dispatch, userStatus, unitsStatus, unicornStatus, userData]);
   
+  // 显示加载状态
   if (isLoading) {
-    return (
-      <div className="home-page loading">
-        <div className="loading-spinner">
-          <Loader2 className="loading-spinner" />
-        </div>
-      </div>
-    );
+    return <PageLoader message="Loading your learning adventures..." />;
+  }
+
+  // 显示错误信息
+  if (userStatus === 'failed' && userData?.error) {
+    return <ErrorMessage message={userData.error} onRetry={() => dispatch(fetchUser())} />;
   }
   
   return (
