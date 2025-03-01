@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Volume2, Loader } from 'lucide-react';
+import { speakWithOpenAI } from '../services/speechService';
 import '../styles/components/StoryContinueModal.css';
 
 interface QuizQuestion {
@@ -35,6 +36,10 @@ export const StoryContinueModal: React.FC<StoryContinueModalProps> = ({
   const [selectedAnswers, setSelectedAnswers] = useState<(string | null)[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [currentView, setCurrentView] = useState<'story' | 'quiz'>('story');
+  
+  // 音频朗读相关状态
+  const [selectedText, setSelectedText] = useState<string | null>(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   useEffect(() => {
     if (storyContent) {
@@ -75,6 +80,29 @@ export const StoryContinueModal: React.FC<StoryContinueModalProps> = ({
     return Math.round((correctAnswers / storyContent.quiz.length) * 100);
   };
 
+  // 处理文本选择
+  const handleTextSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      setSelectedText(selection.toString().trim());
+    }
+  };
+
+  // 播放选中文本
+  const handlePlayAudio = async () => {
+    if (!selectedText) return;
+    
+    try {
+      setIsPlayingAudio(true);
+      await speakWithOpenAI(selectedText);
+    } catch (error) {
+      console.error('Error speaking text:', error);
+      alert('Failed to generate speech. Please try again.');
+    } finally {
+      setIsPlayingAudio(false);
+    }
+  };
+
   return (
     <div className="sc-modal-overlay">
       <div className="sc-modal">
@@ -110,7 +138,36 @@ export const StoryContinueModal: React.FC<StoryContinueModalProps> = ({
             <div className="sc-modal-content">
               {currentView === 'story' && storyContent && (
                 <div className="sc-story-content">
-                  <div className="sc-story-text">
+                  {/* 添加文本选择提示 */}
+                  <div className="sc-text-selection-hint">
+                    <p>Select text to hear it read aloud</p>
+                  </div>
+                  
+                  {/* 显示选中文本的音频控制按钮 */}
+                  {selectedText && (
+                    <div className="sc-audio-controls">
+                      <div className="sc-selected-text">
+                        <p>"{selectedText}"</p>
+                      </div>
+                      <button 
+                        className="sc-play-button"
+                        onClick={handlePlayAudio}
+                        disabled={isPlayingAudio}
+                      >
+                        {isPlayingAudio ? (
+                          <Loader size={20} className="sc-loading-icon" />
+                        ) : (
+                          <Volume2 size={20} />
+                        )}
+                        {isPlayingAudio ? 'Generating audio...' : 'Read aloud'}
+                      </button>
+                    </div>
+                  )}
+                  
+                  <div 
+                    className="sc-story-text"
+                    onMouseUp={handleTextSelection}
+                  >
                     {storyContent.continued_story.split('\n').map((paragraph, i) => (
                       <p key={i}>{paragraph}</p>
                     ))}

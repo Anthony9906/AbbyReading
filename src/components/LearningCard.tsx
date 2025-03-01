@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award, Book, CheckCircle, BarChart2, Clock, FileText, Brain, BookOpen, Eye, EyeOff, Music, Cat, MessageCircle } from "lucide-react";
+import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award, Book, CheckCircle, BarChart2, Clock, Brain, BookOpen, Eye, EyeOff, Music, Cat, MessageCircle, Bird, Squirrel, TentTree } from "lucide-react";
 import { supabase } from '../lib/supabase';
 import '../styles/components/LearningCard.css';
 import { VocabPopover } from './VocabPopover';
@@ -530,7 +530,6 @@ export const LearningCard = () => {
         try {
           parsedResponse = JSON.parse(cleanedResponse);
         } catch (secondParseError) {
-          console.log('Cleaned response:', cleanedResponse);
           
           // 最后尝试使用正则表达式提取 JSON
           try {
@@ -1046,7 +1045,7 @@ export const LearningCard = () => {
                         >
                           <div className="story-item__image-wrapper" style={{ backgroundColor: '#e5c1ff' }}>
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#e5c1ff' }}></div>
-                            <BookOpen size={48} color="#8d4bb9" />
+                            <Bird size={48} color="#8d4bb9" />
                           </div>
                           <div className="story-item__content">
                             <h3 className="story-item__title">Story Continues...</h3>
@@ -1081,10 +1080,10 @@ export const LearningCard = () => {
                         </div>
 
                         {/* Card 2: New Story */}
-                        <div className="story-item" style={{ backgroundColor: '#e0f7ff' }}>
+                        <div className="story-item" style={{ backgroundColor: '#b1dae2' }}>
                           <div className="story-item__image-wrapper" style={{ backgroundColor: '#b8e8ff' }}>
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#b8e8ff' }}></div>
-                            <FileText size={48} color="#0288d1" />
+                            <Squirrel size={48} color="#158594" />
                           </div>
                           <div className="story-item__content">
                             <h3 className="story-item__title">New Story</h3>
@@ -1198,7 +1197,7 @@ export const LearningCard = () => {
                         <div className="story-item" style={{ backgroundColor: '#ffebee' }}>
                           <div className="story-item__image-wrapper" style={{ backgroundColor: '#ffcdd2' }}>
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#ffcdd2' }}></div>
-                            <BookOpen size={48} color="#c62828" />
+                            <TentTree size={48} color="#c62828" />
                           </div>
                           <div className="story-item__content">
                             <h3 className="story-item__title">Comic Books</h3>
@@ -1233,7 +1232,7 @@ export const LearningCard = () => {
                         </div>
                         
                         {/* Card 6: Talk with Cat */}
-                        <div className="story-item" style={{ backgroundColor: '#e3f2fd' }}>
+                        <div className="story-item" style={{ backgroundColor: 'rgb(166 213 251)' }}>
                           <div className="story-item__image-wrapper" style={{ backgroundColor: '#bbdefb' }}>
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#bbdefb' }}></div>
                             <Cat size={48} color="#1565c0" />
