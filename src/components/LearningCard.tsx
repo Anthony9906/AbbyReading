@@ -14,6 +14,10 @@ import '../styles/components/ReadingQuizModal.css';
 import { GrammarQuizModal } from './GrammarQuizModal';
 import { useAppSelector } from "../redux/hooks";
 import { pdfjs } from 'react-pdf';
+import { useAuth } from '../contexts/AuthContext';
+import { generateStoryContinuation } from '../services/aiService';
+import { saveStoryContinuation, saveQuizSubmission } from '../services/storyServices';
+import { StoryContinueModal } from './StoryContinueModal';
 
 interface VocabWord {
   word: string;
@@ -81,6 +85,11 @@ export const LearningCard = () => {
   const [showReadingPreview, setShowReadingPreview] = useState(true);
   const [pdfPageCount, setPdfPageCount] = useState(1);
   const [initialPdfPage, setInitialPdfPage] = useState(1);
+  const [showStoryContinueModal, setShowStoryContinueModal] = useState(false);
+  const [storyContinueContent, setStoryContinueContent] = useState(null);
+  const [isGeneratingStory, setIsGeneratingStory] = useState(false);
+  const [currentStoryContinueId, setCurrentStoryContinueId] = useState<string | null>(null);
+  const { user } = useAuth();
 
   // 从 Redux 获取单元数据
   const { data: units, status } = useAppSelector((state) => state.units);
@@ -491,6 +500,210 @@ export const LearningCard = () => {
     setShowPDFViewer(true);
   };
 
+  const handleStoryContinueClick = async () => {
+    if (!selectedUnit || !selectedUnit.story || !user) return;
+    
+    setShowStoryContinueModal(true);
+    setIsGeneratingStory(true);
+    
+    try {
+      
+      // 准备词汇列表
+      const vocabulary = selectedUnit.vocabulary.map((v: any) => v.word);
+      
+      // 调用 AI 服务生成故事续写
+      const response = await generateStoryContinuation({
+        original_story: selectedUnit.story.content,
+        unit_title: selectedUnit.title,
+        vocabulary
+      });
+      
+      // 安全解析 JSON 响应
+      let parsedResponse;
+      try {
+        // 尝试直接解析
+        parsedResponse = JSON.parse(response);
+      } catch (parseError) {
+        
+        // 尝试清理响应并重新解析
+        const cleanedResponse = cleanJsonResponse(response);
+        try {
+          parsedResponse = JSON.parse(cleanedResponse);
+        } catch (secondParseError) {
+          console.log('Cleaned response:', cleanedResponse);
+          
+          // 最后尝试使用正则表达式提取 JSON
+          try {
+            const jsonMatch = response.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const extractedJson = jsonMatch[0];
+              parsedResponse = JSON.parse(extractedJson);
+            } else {
+              throw new Error('Could not extract JSON from response');
+            }
+          } catch (thirdParseError) {
+            console.error('All JSON parsing attempts failed:', thirdParseError);
+            throw new Error('Failed to parse AI response. Please try again.');
+          }
+        }
+      }
+      
+      // 验证解析后的响应包含所需字段
+      if (!parsedResponse || 
+          !parsedResponse.continued_story || 
+          !Array.isArray(parsedResponse.used_vocabulary) || 
+          !Array.isArray(parsedResponse.quiz)) {
+        throw new Error('AI response is missing required fields');
+      }
+      
+      // 确保 quiz 数据格式正确
+      const validatedQuiz = parsedResponse.quiz.map((q: any, index: number) => {
+        if (!q.question || !Array.isArray(q.options) || !q.answer || !q.explanation) {
+          // 如果问题格式不正确，创建一个默认问题
+          return {
+            question: q.question || `Question ${index + 1} about the story`,
+            options: Array.isArray(q.options) && q.options.length >= 3 
+              ? q.options 
+              : ['Option A', 'Option B', 'Option C'],
+            answer: q.answer || 'Option A',
+            explanation: q.explanation || 'This is the correct answer based on the story.'
+          };
+        }
+        return q;
+      });
+      
+      // 创建验证后的响应对象
+      const validatedResponse = {
+        continued_story: parsedResponse.continued_story,
+        used_vocabulary: Array.isArray(parsedResponse.used_vocabulary) 
+          ? parsedResponse.used_vocabulary 
+          : [],
+        quiz: validatedQuiz
+      };
+      
+      // 保存到数据库
+      const savedStory = await saveStoryContinuation({
+        user_id: user.id,
+        unit_id: selectedUnit.id,
+        continued_story: validatedResponse.continued_story,
+        used_vocabulary: validatedResponse.used_vocabulary,
+        quiz_data: validatedResponse.quiz
+      });
+      
+      setCurrentStoryContinueId(savedStory.id);
+      setStoryContinueContent(validatedResponse);
+    } catch (error) {
+      console.error('Error generating story continuation:', error);
+      toast.error('Failed to generate story. Please try again.');
+    } finally {
+      setIsGeneratingStory(false);
+    }
+  };
+
+  // 辅助函数：清理 JSON 响应
+  const cleanJsonResponse = (response: string): string => {
+    // 移除可能的前缀（如 "```json" 或其他非 JSON 文本）
+    let cleaned = response.trim();
+    
+    // 检查并移除 Markdown 代码块标记
+    if (cleaned.startsWith("```")) {
+      // 找到第一个换行符
+      const firstNewline = cleaned.indexOf('\n');
+      if (firstNewline !== -1) {
+        // 移除第一行（```json 或类似内容）
+        cleaned = cleaned.substring(firstNewline + 1);
+      }
+      
+      // 移除结尾的 ``` 标记
+      const endMarkdown = cleaned.lastIndexOf("```");
+      if (endMarkdown !== -1) {
+        cleaned = cleaned.substring(0, endMarkdown).trim();
+      }
+    }
+    
+    // 移除可能的代码块标记后，再次查找 JSON 对象的开始和结束
+    const jsonStartIndex = cleaned.indexOf('{');
+    const jsonEndIndex = cleaned.lastIndexOf('}');
+    
+    if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+      cleaned = cleaned.substring(jsonStartIndex, jsonEndIndex + 1);
+    }
+    
+    // 修复常见的 JSON 格式问题
+    // 1. 将单引号替换为双引号
+    cleaned = cleaned.replace(/'/g, '"');
+    
+    // 2. 修复没有引号的键
+    cleaned = cleaned.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
+    
+    // 3. 移除尾随逗号
+    cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+    
+    // 4. 修复可能的换行问题
+    cleaned = cleaned.replace(/\n/g, ' ');
+    
+    // 5. 修复可能的转义问题
+    cleaned = cleaned.replace(/\\/g, '\\\\');
+    
+    // 6. 修复双引号内的双引号
+    let inString = false;
+    let result = '';
+    for (let i = 0; i < cleaned.length; i++) {
+      const char = cleaned[i];
+      if (char === '"') {
+        // 检查是否是转义的引号
+        if (i > 0 && cleaned[i-1] === '\\') {
+          result += char;
+        } else {
+          inString = !inString;
+          result += char;
+        }
+      } else if (char === '"' && inString) {
+        // 在字符串内部的双引号，应该被转义
+        result += '\\"';
+      } else {
+        result += char;
+      }
+    }
+    
+    console.log("Cleaned JSON:", cleaned);
+    return cleaned;
+  };
+
+  // 辅助函数：从故事中提取角色（简化版）
+  const extractCharactersFromStory = (storyContent: string) => {
+    // 这是一个简化的实现，实际应用中可能需要更复杂的逻辑
+    // 例如使用NLP或者预定义的角色列表
+    const words = storyContent.split(/\s+/);
+    const potentialCharacters = words
+      .filter(word => word.length > 1 && /^[A-Z]/.test(word))
+      .filter(word => !['I', 'The', 'A', 'An', 'In', 'On', 'At', 'To', 'And'].includes(word));
+    
+    // 去重并限制数量
+    return [...new Set(potentialCharacters)].slice(0, 5);
+  };
+
+  // 处理问答提交
+  const handleQuizSubmission = async (answers: any[]) => {
+    if (!user || !currentStoryContinueId) return;
+    
+    try {
+      // 计算得分
+      const correctAnswers = answers.filter(a => a.isCorrect).length;
+      const score = Math.round((correctAnswers / answers.length) * 100);
+      
+      // 保存提交结果
+      await saveQuizSubmission({
+        story_continue_id: currentStoryContinueId,
+        user_id: user.id,
+        answers,
+        score
+      });
+    } catch (error) {
+      console.error('Error saving quiz submission:', error);
+    }
+  };
+
   return (
     <div className="learning-card-container">
       {/* 移动到顶部的按钮组 */}
@@ -826,7 +1039,11 @@ export const LearningCard = () => {
                     <div className="stories-section">
                       <div className="story-grid">
                         {/* Card 1: Story Continues */}
-                        <div className="story-item" style={{ backgroundColor: '#f8e4ff' }}>
+                        <div 
+                          className="story-item" 
+                          style={{ backgroundColor: '#f8e4ff' }}
+                          onClick={handleStoryContinueClick}
+                        >
                           <div className="story-item__image-wrapper" style={{ backgroundColor: '#e5c1ff' }}>
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#e5c1ff' }}></div>
                             <BookOpen size={48} color="#8d4bb9" />
@@ -1243,6 +1460,16 @@ export const LearningCard = () => {
           onClose={() => setShowGrammarQuiz(false)}
           unitId={selectedUnit?.id || ''}
           grammarPoint={selectedGrammarPoint}
+        />
+      )}
+
+      {showStoryContinueModal && (
+        <StoryContinueModal
+          isOpen={showStoryContinueModal}
+          onClose={() => setShowStoryContinueModal(false)}
+          storyContent={storyContinueContent}
+          onSubmitAnswers={handleQuizSubmission}
+          isLoading={isGeneratingStory}
         />
       )}
     </div>

@@ -155,7 +155,7 @@ export const ReadingQuizModal = ({ isOpen, onClose, storyContent, unitId, storyI
           { role: "system", content: "You are a helpful assistant that creates reading comprehension quizzes." },
           { role: "user", content: prompt }
         ],
-        temperature: 0.5,
+        temperature: 1,
       });
       
       const generatedContent = response.choices[0]?.message?.content || '';
