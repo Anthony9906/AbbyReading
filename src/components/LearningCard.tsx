@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect, useRef } from 'react';
 import { School, BookOpenCheck, BrainCircuit, Play, Square, MessageCircleMore, Quote, Pencil, CheckCircle2, ListChecks, MessageSquareQuote, Award, Book, CheckCircle, BarChart2, Clock, Brain, BookOpen, Eye, EyeOff, Music, Cat, MessageCircle, Bird, Squirrel, TentTree } from "lucide-react";
 import '../styles/components/LearningCard.css';
@@ -18,6 +16,7 @@ import { generateStoryContinuation } from '../services/aiService';
 import { saveStoryContinuation, saveQuizSubmission } from '../services/storyServices';
 import { StoryContinueModal } from './StoryContinueModal';
 import { supabase } from '../lib/supabase';
+import WordSearchGame from './WordSearchGame';
 
 interface VocabWord {
   word: string;
@@ -94,6 +93,7 @@ export const LearningCard = () => {
   const [showComicPDFViewer, setShowComicPDFViewer] = useState(false);
   const [currentComicUrl, setCurrentComicUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showWordSearchGame, setShowWordSearchGame] = useState(false);
 
   // 从 Redux 获取单元数据
   const { data: units, status } = useAppSelector((state) => state.units);
@@ -731,6 +731,16 @@ export const LearningCard = () => {
     }
   };
 
+  // 添加处理 Brain Teasers 卡片点击的函数
+  const handleBrainTeaserClick = () => {
+    if (!selectedUnit?.vocabulary || selectedUnit.vocabulary.length === 0) {
+      toast.error('No vocabulary words available for this unit');
+      return;
+    }
+    
+    setShowWordSearchGame(true);
+  };
+
   return (
     <div className="learning-card-container">
       {/* 移动到顶部的按钮组 */}
@@ -1146,14 +1156,18 @@ export const LearningCard = () => {
                         </div>
 
                         {/* Card 3: Brain Teasers */}
-                        <div className="story-item" style={{ backgroundColor: '#fff0e0' }}>
+                        <div 
+                          className="story-item" 
+                          style={{ backgroundColor: '#fff0e0' }}
+                          onClick={handleBrainTeaserClick}
+                        >
                           <div className="story-item__image-wrapper" style={{ backgroundColor: '#ffe0b2' }}>
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#ffe0b2' }}></div>
                             <Brain size={48} color="#ed6c02" />
                           </div>
                           <div className="story-item__content">
-                            <h3 className="story-item__title">Like a Brain Teaser?</h3>
-                            <p className="story-item__description">Challenge yourself with fun puzzles that test your language skills.</p>
+                            <h3 className="story-item__title">Word Search</h3>
+                            <p className="story-item__description">Try to find the words in the grid, and learn new words.</p>
                             <div className="story-item__footer">
                               <div className="story-item__metrics">
                                 <div className="story-item__metric">
@@ -1513,6 +1527,15 @@ export const LearningCard = () => {
           comicBooks={comicBooks}
           onComicSelect={(url) => setCurrentComicUrl(url)}
           isComicBook={true}
+        />
+      )}
+
+      {showWordSearchGame && selectedUnit?.vocabulary && (
+        <WordSearchGame
+          isOpen={showWordSearchGame}
+          onClose={() => setShowWordSearchGame(false)}
+          words={selectedUnit.vocabulary.map((vocab: any) => vocab.word.toLowerCase())}
+          unitTitle={selectedUnit.title}
         />
       )}
     </div>
