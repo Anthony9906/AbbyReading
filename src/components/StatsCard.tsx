@@ -7,7 +7,6 @@ import { LogOut, Gift, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import confetti from 'canvas-confetti';
-import { useAppSelector } from "../redux/hooks";
 
 export const StatsCard = () => {
   const navigate = useNavigate();
@@ -23,14 +22,6 @@ export const StatsCard = () => {
   const [comicName, setComicName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 从 Redux 获取数据
-  const { data: units } = useAppSelector((state) => state.units);
-  const { data: unicornRecords } = useAppSelector((state) => state.unicornRecords);
-  
-  // 计算统计数据
-  const completedUnits = units.filter((unit: any) => unit.completed).length;
-  const totalUnits = units.length;
-  const completionPercentage = totalUnits > 0 ? Math.round((completedUnits / totalUnits) * 100) : 0;
 
   useEffect(() => {
     const fetchUnicornCount = async () => {

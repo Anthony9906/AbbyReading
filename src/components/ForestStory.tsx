@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight, Volume } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import '../styles/components/ForestStory.css';
@@ -28,6 +28,11 @@ const ForestStory: React.FC<ForestStoryProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [storyDialogues, setStoryDialogues] = useState<any[]>([]);
   const [selectedCharacter, setSelectedCharacter] = useState<any>(null);
+  const [visibleDialogues, setVisibleDialogues] = useState<number[]>([]);
+  const [quizAnswered, setQuizAnswered] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationAttempts, setGenerationAttempts] = useState(0);
+  const maxAttempts = 2; // 最大尝试次数
   
   // 动物角色定义
   const characters = [
@@ -59,13 +64,13 @@ const ForestStory: React.FC<ForestStoryProps> = ({
       description: "Uses simple sentence structures with profound meanings"
     },
     {
-      id: 'rabbit',
-      name: "Hoppy",
-      species: "Rabbit",
+      id: 'cat',
+      name: "Whiskers",
+      species: "Cat",
       personality: "Curious and playful",
-      emoji: "🐰",
+      emoji: "🐱",
       color: "#9370DB",
-      description: "Always asks questions using interrogative sentences"
+      description: "Always asks questions and explores new vocabulary"
     },
     {
       id: 'fox',
@@ -75,15 +80,30 @@ const ForestStory: React.FC<ForestStoryProps> = ({
       emoji: "🦊",
       color: "#e46618",
       description: "Uses polite language and suggestion sentence patterns"
+    },
+    {
+      id: 'unicorn',
+      name: "Sparkle",
+      species: "Unicorn",
+      personality: "Magical and inspiring",
+      emoji: "🦄",
+      color: "#FF69B4",
+      description: "Uses colorful expressions and encourages imagination"
     }
   ];
   
   // 生成故事对话
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isGenerating && generationAttempts === 0) {
+      console.log("generating forest story in useEffect");
       generateStory();
     }
-  }, [isOpen]);
+    
+    // 清理函数
+    return () => {
+      // 如果组件卸载，不做任何操作
+    };
+  }, [isOpen]); // 只在 isOpen 变化时触发
   
   // 添加 JSON 清理函数
   const cleanJsonResponse = (response: string): string => {
@@ -154,9 +174,12 @@ const ForestStory: React.FC<ForestStoryProps> = ({
     return cleaned;
   };
   
-  // 修改 generateStory 函数
-  const generateStory = async () => {
+  // 使用 useCallback 包装 generateStory 函数
+  const generateStory = useCallback(async () => {
+    if (isGenerating) return; // 防止重复请求
+    
     setIsLoading(true);
+    setIsGenerating(true);
     
     try {
       // 准备词汇和语法数据
@@ -192,13 +215,11 @@ const ForestStory: React.FC<ForestStoryProps> = ({
           storyData = JSON.parse(cleanedJson);
         } catch (parseError) {
           console.error('Error parsing story JSON:', parseError);
-          toast.error('Failed to parse the story data. Please try again.');
           throw new Error('JSON parsing failed');
         }
       }
       
-      console.log(storyData);
-      // 验证数据结构
+      // 验证数据结构和完整性
       if (!storyData.dialogues || !Array.isArray(storyData.dialogues)) {
         throw new Error('Invalid story data structure: dialogues missing or not an array');
       }
@@ -206,6 +227,21 @@ const ForestStory: React.FC<ForestStoryProps> = ({
       if (!storyData.quizQuestion || !Array.isArray(storyData.quizQuestion)) {
         throw new Error('Invalid story data structure: quizQuestion missing or not an array');
       }
+      
+      // 验证每页对话的完整性
+      const isDataComplete = storyData.dialogues.every((page: any[]) => 
+        Array.isArray(page) && page.length >= 4
+      );
+      
+      // 如果数据不完整且尝试次数未达上限，重试
+      if (!isDataComplete && generationAttempts < maxAttempts) {
+        console.log('Incomplete story data, retrying...');
+        setGenerationAttempts(prev => prev + 1);
+        setIsGenerating(false);
+        return generateStory(); // 递归调用，重新生成
+      }
+      
+      console.log('Final story data:', storyData);
       
       // 处理角色引用
       const processedDialogues = storyData.dialogues.map((page: any[]) => {
@@ -257,6 +293,7 @@ const ForestStory: React.FC<ForestStoryProps> = ({
       
       setStoryDialogues(processedDialogues);
       setQuizQuestions(storyData.quizQuestion);
+      setGenerationAttempts(0); // 重置尝试次数
       
     } catch (error) {
       console.error('Error generating story:', error);
@@ -266,8 +303,9 @@ const ForestStory: React.FC<ForestStoryProps> = ({
       createSimpleDialogue();
     } finally {
       setIsLoading(false);
+      setIsGenerating(false);
     }
-  };
+  }, [unitTitle, unitVocabulary, unitGrammar, characters, isGenerating]);
   
   // 修改 createSimpleDialogue 函数
   const createSimpleDialogue = () => {
@@ -358,8 +396,23 @@ const ForestStory: React.FC<ForestStoryProps> = ({
     
     if (currentQuiz && index === currentQuiz.correctAnswer) {
       toast.success('Correct! Well done!');
+      setQuizAnswered(true);
+      
+      // 答对后，延迟一秒自动进入下一页
+      setTimeout(() => {
+        setShowQuiz(false);
+        setCurrentQuizAnswer(null);
+        if (currentPage < storyDialogues.length - 1) {
+          setCurrentPage(currentPage + 1);
+        }
+        setQuizAnswered(false);
+      }, 1000);
     } else {
       toast.error('Not quite right. Try again!');
+      // 答错后，延迟清除选择，让用户重新尝试
+      setTimeout(() => {
+        setCurrentQuizAnswer(null);
+      }, 1000);
     }
   };
   
@@ -372,6 +425,20 @@ const ForestStory: React.FC<ForestStoryProps> = ({
       window.speechSynthesis.speak(utterance);
     }
   };
+  
+  // 在页面变化时重置可见对话
+  useEffect(() => {
+    if (!isLoading && storyDialogues && storyDialogues[currentPage]) {
+      setVisibleDialogues([]);
+      
+      // 逐个显示对话
+      storyDialogues[currentPage].forEach((_: any, index: number) => {
+        setTimeout(() => {
+          setVisibleDialogues(prev => [...prev, index]);
+        }, 1000 * index); // 每个对话间隔1秒显示
+      });
+    }
+  }, [currentPage, isLoading, storyDialogues]);
   
   if (!isOpen) return null;
   
@@ -386,7 +453,7 @@ const ForestStory: React.FC<ForestStoryProps> = ({
           {/* 将角色头像移到 header 上 */}
           <div className="fs-header-characters">
             {storyDialogues && storyDialogues[currentPage] && storyDialogues[currentPage].map((dialogue: any, index: number) => (
-              dialogue && dialogue.character && (
+              dialogue && dialogue.character && visibleDialogues.includes(index) && (
                 <div 
                   key={`header-${index}`}
                   className="fs-header-character"
@@ -427,10 +494,10 @@ const ForestStory: React.FC<ForestStoryProps> = ({
               <div className="fs-scene">
                 <div className="fs-dialogue-container">
                   {storyDialogues && storyDialogues[currentPage] && storyDialogues[currentPage].map((dialogue: any, index: number) => (
-                    dialogue && dialogue.character && (
+                    dialogue && dialogue.character && visibleDialogues.includes(index) && (
                       <div 
                         key={index}
-                        className="fs-dialogue-row"
+                        className="fs-dialogue-row fs-dialogue-animate"
                       >
                         <div className="fs-character-avatar">
                           <div 
@@ -443,7 +510,7 @@ const ForestStory: React.FC<ForestStoryProps> = ({
                           </div>
                           <span 
                             className="fs-character-name" 
-                            style={{ color: dialogue.character.color }}
+                            style={{ backgroundColor: dialogue.character.color }}
                           >
                             {dialogue.character.name}
                           </span>
@@ -454,7 +521,7 @@ const ForestStory: React.FC<ForestStoryProps> = ({
                             className="fs-dialogue-bubble"
                             style={{ 
                               borderColor: dialogue.character.color,
-                              backgroundColor: `${dialogue.character.color}35`
+                              backdropFilter: 'blur(8px)'
                             }}
                           >
                             <div className="fs-dialogue-content">
@@ -511,16 +578,31 @@ const ForestStory: React.FC<ForestStoryProps> = ({
                     <p>{quizQuestions[currentPage].question}</p>
                     
                     <div className="fs-quiz-options">
-                      {quizQuestions[currentPage].options.map((option: string, index: number) => (
-                        <button 
-                          key={index}
-                          className={`fs-quiz-option ${currentQuizAnswer === index.toString() ? 'selected' : ''}`}
-                          onClick={() => handleQuizAnswer(index)}
-                          disabled={currentQuizAnswer !== null}
-                        >
-                          {option}
-                        </button>
-                      ))}
+                      {quizQuestions[currentPage].options.map((option: string, index: number) => {
+                        const isSelected = currentQuizAnswer === index.toString();
+                        const isCorrect = index === quizQuestions[currentPage].correctAnswer;
+                        let className = "fs-quiz-option";
+                        
+                        if (isSelected) {
+                          className += " selected";
+                          if (isCorrect) {
+                            className += " correct";
+                          } else {
+                            className += " incorrect";
+                          }
+                        }
+                        
+                        return (
+                          <button 
+                            key={index}
+                            className={className}
+                            onClick={() => handleQuizAnswer(index)}
+                            disabled={quizAnswered || (isSelected && !isCorrect)}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

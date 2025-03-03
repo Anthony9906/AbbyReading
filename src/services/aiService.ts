@@ -165,11 +165,12 @@ export const generateForestStory = async (
       Grammar points to demonstrate:
       ${grammar.map((g: any) => `- ${g.point}: ${g.explanation}`).join('\n')}
       
-      Create a story with 4 pages of dialogues:
+      Create a story with 5 pages of dialogues:
       1. Introduction to the topic
       2. Development of the conversation
       3. Discussion of key vocabulary and grammar
-      4. Conclusion and review
+      4. A interesting joke from the forest
+      5. Conclusion and review
       
       For each dialogue, include:
       - The character speaking
@@ -179,7 +180,7 @@ export const generateForestStory = async (
 
       Make sure every dialogue have at least 4 sentences from 2 characters, and each character should appear at least 2 dialogues.
       
-      For each page of dialogue, also create one quiz question related to that page with 3 options and the index of the correct answer.
+      For each page of dialogue, also create one quiz question related to that page with 4 options and the index of the correct answer.
       
       Format the response as a JSON object with these properties:
       {
@@ -198,7 +199,7 @@ export const generateForestStory = async (
         "quizQuestion": [
           {
             "question": "quiz question for page 1",
-            "options": ["option1", "option2", "option3"],
+            "options": ["option1", "option2", "option3", "option4"],
             "correctAnswer": 0
           },
           // One quiz question for each page
@@ -258,7 +259,6 @@ export const generateForestStory = async (
       if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
         cleaned = cleaned.substring(jsonStartIndex, jsonEndIndex + 1);
       }
-      
       return cleaned;
     };
     

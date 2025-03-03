@@ -86,7 +86,11 @@ export const LearningCard = () => {
   const [pdfPageCount, setPdfPageCount] = useState(1);
   const [initialPdfPage, setInitialPdfPage] = useState(1);
   const [showStoryContinueModal, setShowStoryContinueModal] = useState(false);
-  const [storyContinueContent, setStoryContinueContent] = useState(null);
+  const [storyContinueContent, setStoryContinueContent] = useState<null | {
+    continued_story: string;
+    used_vocabulary: string[];
+    quiz: any[];
+  }>(null);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [currentStoryContinueId, setCurrentStoryContinueId] = useState<string | null>(null);
   const { user } = useAuth();
@@ -1138,16 +1142,17 @@ export const LearningCard = () => {
                           style={{ backgroundColor: '#e0f7fa' }}
                           onClick={handleNewStoryClick}
                         >
-                          <div className="story-item__image-wrapper" style={{ backgroundColor: '#b8e8ff' }}>
-                            <div className="story-item__glow-effect" style={{ backgroundColor: '#b8e8ff' }}></div>
-                            <Squirrel size={48} color="#158594" />
+                          <div className="story-item__image-wrapper" style={{ backgroundColor: '#c8e6c9' }}>
+                            <div className="story-item__glow-effect" style={{ backgroundColor: '#c8e6c9' }}></div>
+                            <Squirrel size={48} color="#2e7d32" />
                           </div>
                           
                           {/* 时间标签 - 使用卡片高亮色 */}
-                          <div className="story-item__duration" style={{ backgroundColor: '#b8e8ff' }}>
-                            <Clock size={14} color="#158594" />
-                            <span style={{ color: '#158594' }}>12 min</span>
+                          <div className="story-item__duration" style={{ backgroundColor: '#c8e6c9' }}>
+                            <Clock size={14} color="#2e7d32" />
+                            <span style={{ color: '#2e7d32' }}>8 min</span>
                           </div>
+                          
                           
                           <div className="story-item__content">
                             <h3 className="story-item__title">Forest Friends</h3>
@@ -1224,15 +1229,15 @@ export const LearningCard = () => {
                         
                         {/* Card 4: Play a Music */}
                         <div className="story-item" style={{ backgroundColor: '#e8f5e9' }}>
-                          <div className="story-item__image-wrapper" style={{ backgroundColor: '#c8e6c9' }}>
-                            <div className="story-item__glow-effect" style={{ backgroundColor: '#c8e6c9' }}></div>
-                            <Music size={48} color="#2e7d32" />
+                          <div className="story-item__image-wrapper" style={{ backgroundColor: '#b8e8ff' }}>
+                            <div className="story-item__glow-effect" style={{ backgroundColor: '#b8e8ff' }}></div>
+                            <Music size={48} color="#158594" />
                           </div>
                           
                           {/* 时间标签 - 使用卡片高亮色 */}
-                          <div className="story-item__duration" style={{ backgroundColor: '#c8e6c9' }}>
-                            <Clock size={14} color="#2e7d32" />
-                            <span style={{ color: '#2e7d32' }}>8 min</span>
+                          <div className="story-item__duration" style={{ backgroundColor: '#b8e8ff' }}>
+                            <Clock size={14} color="#158594" />
+                            <span style={{ color: '#158594' }}>12 min</span>
                           </div>
                           
                           <div className="story-item__content">
