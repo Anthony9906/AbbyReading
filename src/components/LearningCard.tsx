@@ -12,12 +12,12 @@ import { GrammarQuizModal } from './GrammarQuizModal';
 import { useAppSelector } from "../redux/hooks";
 import { pdfjs } from 'react-pdf';
 import { useAuth } from '../contexts/AuthContext';
-import { generateStoryContinuation } from '../services/aiService';
-import { saveStoryContinuation, saveQuizSubmission } from '../services/storyService';
+import { generateStoryContinuation, generateForestStory } from '../services/aiService';
 import { StoryContinueModal } from './StoryContinueModal';
 import { supabase } from '../lib/supabase';
 import WordSearchGame from './WordSearchGame';
 import ForestStory from './ForestStory';
+import { saveStoryContinuation, saveQuizSubmission } from '../services/storyService';
 
 interface VocabWord {
   word: string;
@@ -100,6 +100,12 @@ export const LearningCard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showWordSearchGame, setShowWordSearchGame] = useState(false);
   const [showForestStory, setShowForestStory] = useState(false);
+  const [isForestStoryLoading, setIsForestStoryLoading] = useState(false);
+  const [forestStoryData, setForestStoryData] = useState<{
+    dialogues: any[][];
+    quizQuestions: any[];
+    unitTitle: string;
+  } | null>(null);
 
   // 从 Redux 获取单元数据
   const { data: units, status } = useAppSelector((state) => state.units);
@@ -747,14 +753,182 @@ export const LearningCard = () => {
     setShowWordSearchGame(true);
   };
 
-  // 添加处理 New Story 卡片点击的函数
-  const handleNewStoryClick = () => {
-    if (!selectedUnit) {
-      toast.error('Please select a unit first');
-      return;
-    }
-    
+  // 优化 Forest Story 卡片的点击处理方法
+  const handleNewStoryClick = async () => {
+    // 1. 立即显示弹窗（loading状态）
     setShowForestStory(true);
+    setIsForestStoryLoading(true);
+    
+    try {
+      // 准备词汇和语法数据
+      const vocabData = selectedUnit?.vocabulary?.map((v: any) => ({
+        word: v.word,
+        definition: v.definition || ''
+      })) || [];
+      
+      const grammarData = selectedUnit?.grammar?.map((g: any) => ({
+        point: g.grammar_point,
+        explanation: g.explanation || ''
+      })) || [];
+      
+      // 角色定义
+      const characters = [
+        {
+          id: 'owl',
+          name: "Professor Hoot",
+          species: "Owl",
+          personality: "Wise and patient",
+          emoji: "🦉",
+          color: "#6f4d2e",
+          description: "Uses complex grammar and explains things"
+        },
+        {
+          id: 'squirrel',
+          name: "Lily",
+          species: "Squirrel",
+          personality: "Energetic and cheerful",
+          emoji: "🐿️",
+          color: "#c54c4c",
+          description: "Speaks quickly and uses many adjectives and exclamations"
+        },
+        {
+          id: 'turtle',
+          name: "Grandpa Shell",
+          species: "Turtle",
+          personality: "Slow but thoughtful",
+          emoji: "🐢",
+          color: "#2E8B57",
+          description: "Uses simple sentence structures with profound meanings"
+        },
+        {
+          id: 'cat',
+          name: "Whiskers",
+          species: "Cat",
+          personality: "Curious and playful",
+          emoji: "🐱",
+          color: "#9370DB",
+          description: "Always asks questions and explores new vocabulary"
+        },
+        {
+          id: 'fox',
+          name: "Fiona",
+          species: "Fox",
+          personality: "Kind and helpful",
+          emoji: "🦊",
+          color: "#e46618",
+          description: "Uses polite language and suggestion sentence patterns"
+        },
+        {
+          id: 'unicorn',
+          name: "Sparkle",
+          species: "Unicorn",
+          personality: "Magical and inspiring",
+          emoji: "🦄",
+          color: "#FF69B4",
+          description: "Uses colorful expressions and encourages imagination"
+        }
+      ];
+      
+      // 2. 调用 AI 服务生成故事
+      const response = await generateForestStory(
+        selectedUnit?.title || 'Forest Adventure',
+        vocabData,
+        grammarData,
+        characters
+      );
+      
+      // 处理 AI 返回的数据
+      let storyData;
+      
+      try {
+        // 如果返回的是字符串，尝试解析 JSON
+        if (typeof response === 'string') {
+          // 使用更健壮的 JSON 清理方法
+          const cleanedJson = cleanJsonResponse(response);
+          try {
+            storyData = JSON.parse(cleanedJson);
+          } catch (jsonError) {
+            //console.error('First JSON parse attempt failed:', jsonError);
+            
+            // 尝试使用正则表达式提取 JSON 对象
+            const jsonMatch = response.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                storyData = JSON.parse(jsonMatch[0]);
+              } catch (regexError) {
+                console.error('Regex JSON extraction failed:', regexError);
+                throw new Error('Failed to parse AI response');
+              }
+            } else {
+              throw new Error('Could not extract JSON from response');
+            }
+          }
+        } else {
+          // 如果已经是对象，直接使用
+          storyData = response;
+        }
+        
+        console.log("Parsed story data:", storyData);
+        
+        // 验证数据结构
+        if (!storyData.dialogues || !Array.isArray(storyData.dialogues)) {
+          throw new Error('Invalid story data structure: dialogues missing or not an array');
+        }
+        
+        if (!storyData.quizQuestion || !Array.isArray(storyData.quizQuestion)) {
+          throw new Error('Invalid story data structure: quizQuestion missing or not an array');
+        }
+        
+        // 处理角色引用
+        const processedDialogues = storyData.dialogues.map((page: any[]) => {
+          return Array.isArray(page) ? page.map((dialogue: any) => {
+            if (!dialogue || typeof dialogue !== 'object') return null;
+            
+            // 查找对应的角色对象
+            let characterObj;
+            if (typeof dialogue.character === 'string') {
+              characterObj = characters.find(c => 
+                c.id === dialogue.character || 
+                c.name.toLowerCase() === dialogue.character.toLowerCase()
+              );
+            } else if (dialogue.character && typeof dialogue.character === 'object') {
+              characterObj = dialogue.character;
+            }
+            
+            // 如果找不到角色，使用默认角色
+            if (!characterObj) {
+              characterObj = characters[0];
+            }
+            
+            return {
+              ...dialogue,
+              character: characterObj
+            };
+          }).filter(Boolean) : [];
+        });
+        
+        // 3. 设置组件的内容用于显示
+        setForestStoryData({
+          dialogues: processedDialogues,
+          quizQuestions: storyData.quizQuestion,
+          unitTitle: selectedUnit?.title || 'Forest Adventure'
+        });
+        
+      } catch (parseError) {
+        console.error('Error processing story data:', parseError);
+        toast.error('Failed to create the forest story. Please try again.');
+        // 关闭弹窗
+        setShowForestStory(false);
+      }
+      
+    } catch (error) {
+      console.error('Error generating forest story:', error);
+      toast.error('Something went wrong. Please try again.');
+      // 关闭弹窗
+      setShowForestStory(false);
+    } finally {
+      setIsForestStoryLoading(false);
+    }
   };
 
   return (
@@ -1578,13 +1752,14 @@ export const LearningCard = () => {
         />
       )}
 
-      {showForestStory && selectedUnit && (
+      {showForestStory && (
         <ForestStory
           isOpen={showForestStory}
           onClose={() => setShowForestStory(false)}
-          unitVocabulary={selectedUnit.vocabulary || []}
-          unitGrammar={selectedUnit.grammar || []}
-          unitTitle={selectedUnit.title}
+          isLoading={isForestStoryLoading}
+          storyData={forestStoryData}
+          unitVocabulary={selectedUnit?.vocabulary || []}
+          unitGrammar={selectedUnit?.grammar || []}
         />
       )}
     </div>
