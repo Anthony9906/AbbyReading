@@ -13,10 +13,11 @@ import { useAppSelector } from "../redux/hooks";
 import { pdfjs } from 'react-pdf';
 import { useAuth } from '../contexts/AuthContext';
 import { generateStoryContinuation } from '../services/aiService';
-import { saveStoryContinuation, saveQuizSubmission } from '../services/storyServices';
+import { saveStoryContinuation, saveQuizSubmission } from '../services/storyService';
 import { StoryContinueModal } from './StoryContinueModal';
 import { supabase } from '../lib/supabase';
 import WordSearchGame from './WordSearchGame';
+import ForestStory from './ForestStory';
 
 interface VocabWord {
   word: string;
@@ -94,6 +95,7 @@ export const LearningCard = () => {
   const [currentComicUrl, setCurrentComicUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showWordSearchGame, setShowWordSearchGame] = useState(false);
+  const [showForestStory, setShowForestStory] = useState(false);
 
   // 从 Redux 获取单元数据
   const { data: units, status } = useAppSelector((state) => state.units);
@@ -741,6 +743,16 @@ export const LearningCard = () => {
     setShowWordSearchGame(true);
   };
 
+  // 添加处理 New Story 卡片点击的函数
+  const handleNewStoryClick = () => {
+    if (!selectedUnit) {
+      toast.error('Please select a unit first');
+      return;
+    }
+    
+    setShowForestStory(true);
+  };
+
   return (
     <div className="learning-card-container">
       {/* 移动到顶部的按钮组 */}
@@ -1085,9 +1097,16 @@ export const LearningCard = () => {
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#e5c1ff' }}></div>
                             <Bird size={48} color="#8d4bb9" />
                           </div>
+                          
+                          {/* 时间标签 - 使用卡片高亮色 */}
+                          <div className="story-item__duration" style={{ backgroundColor: '#e5c1ff' }}>
+                            <Clock size={14} color="#8d4bb9" />
+                            <span style={{ color: '#8d4bb9' }}>15 min</span>
+                          </div>
+                          
                           <div className="story-item__content">
                             <h3 className="story-item__title">Story Continues...</h3>
-                            <p className="story-item__description">Continue your learning journey with the next part of your current story.</p>
+                            <p className="story-item__description">Continue your journey of the story, what's happening next?</p>
                             <div className="story-item__footer">
                               <div className="story-item__metrics">
                                 <div className="story-item__metric">
@@ -1109,23 +1128,30 @@ export const LearningCard = () => {
                                   <span>85% correct</span>
                                 </div>
                               </div>
-                              <div className="story-item__duration">
-                                <Clock size={14} />
-                                <span>15 min</span>
-                              </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Card 2: New Story */}
-                        <div className="story-item" style={{ backgroundColor: '#b1dae2' }}>
+                        {/* Card 2: Forest Story */}
+                        <div 
+                          className="story-item" 
+                          style={{ backgroundColor: '#e0f7fa' }}
+                          onClick={handleNewStoryClick}
+                        >
                           <div className="story-item__image-wrapper" style={{ backgroundColor: '#b8e8ff' }}>
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#b8e8ff' }}></div>
                             <Squirrel size={48} color="#158594" />
                           </div>
+                          
+                          {/* 时间标签 - 使用卡片高亮色 */}
+                          <div className="story-item__duration" style={{ backgroundColor: '#b8e8ff' }}>
+                            <Clock size={14} color="#158594" />
+                            <span style={{ color: '#158594' }}>12 min</span>
+                          </div>
+                          
                           <div className="story-item__content">
-                            <h3 className="story-item__title">New Story</h3>
-                            <p className="story-item__description">Discover a brand new story with fresh vocabulary and grammar concepts.</p>
+                            <h3 className="story-item__title">Forest Friends</h3>
+                            <p className="story-item__description">Let's see what's the ideas from the forest.</p>
                             <div className="story-item__footer">
                               <div className="story-item__metrics">
                                 <div className="story-item__metric">
@@ -1147,10 +1173,6 @@ export const LearningCard = () => {
                                   <span>92% correct</span>
                                 </div>
                               </div>
-                              <div className="story-item__duration">
-                                <Clock size={14} />
-                                <span>20 min</span>
-                              </div>
                             </div>
                           </div>
                         </div>
@@ -1165,6 +1187,13 @@ export const LearningCard = () => {
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#ffe0b2' }}></div>
                             <Brain size={48} color="#ed6c02" />
                           </div>
+                          
+                          {/* 时间标签 - 使用卡片高亮色 */}
+                          <div className="story-item__duration" style={{ backgroundColor: '#ffe0b2' }}>
+                            <Clock size={14} color="#ed6c02" />
+                            <span style={{ color: '#ed6c02' }}>10 min</span>
+                          </div>
+                          
                           <div className="story-item__content">
                             <h3 className="story-item__title">Word Search</h3>
                             <p className="story-item__description">Try to find the words in the grid, and learn new words.</p>
@@ -1189,10 +1218,6 @@ export const LearningCard = () => {
                                   <span>78% correct</span>
                                 </div>
                               </div>
-                              <div className="story-item__duration">
-                                <Clock size={14} />
-                                <span>10 min</span>
-                              </div>
                             </div>
                           </div>
                         </div>
@@ -1203,6 +1228,13 @@ export const LearningCard = () => {
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#c8e6c9' }}></div>
                             <Music size={48} color="#2e7d32" />
                           </div>
+                          
+                          {/* 时间标签 - 使用卡片高亮色 */}
+                          <div className="story-item__duration" style={{ backgroundColor: '#c8e6c9' }}>
+                            <Clock size={14} color="#2e7d32" />
+                            <span style={{ color: '#2e7d32' }}>8 min</span>
+                          </div>
+                          
                           <div className="story-item__content">
                             <h3 className="story-item__title">Play a Music</h3>
                             <p className="story-item__description">Learn language through music and songs with lyrics that reinforce vocabulary.</p>
@@ -1227,10 +1259,6 @@ export const LearningCard = () => {
                                   <span>88% correct</span>
                                 </div>
                               </div>
-                              <div className="story-item__duration">
-                                <Clock size={14} />
-                                <span>18 min</span>
-                              </div>
                             </div>
                           </div>
                         </div>
@@ -1245,6 +1273,13 @@ export const LearningCard = () => {
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#ffcdd2' }}></div>
                             <TentTree size={48} color="#c62828" />
                           </div>
+                          
+                          {/* 时间标签 - 使用卡片高亮色 */}
+                          <div className="story-item__duration" style={{ backgroundColor: '#ffcdd2' }}>
+                            <Clock size={14} color="#c62828" />
+                            <span style={{ color: '#c62828' }}>20 min</span>
+                          </div>
+                          
                           <div className="story-item__content">
                             <h3 className="story-item__title">Comic Books</h3>
                             <p className="story-item__description">Learn through visual storytelling with fun comics that make vocabulary memorable.</p>
@@ -1269,10 +1304,6 @@ export const LearningCard = () => {
                                   <span>82% correct</span>
                                 </div>
                               </div>
-                              <div className="story-item__duration">
-                                <Clock size={14} />
-                                <span>25 min</span>
-                              </div>
                             </div>
                           </div>
                         </div>
@@ -1283,6 +1314,13 @@ export const LearningCard = () => {
                             <div className="story-item__glow-effect" style={{ backgroundColor: '#bbdefb' }}></div>
                             <Cat size={48} color="#1565c0" />
                           </div>
+                          
+                          {/* 时间标签 - 使用卡片高亮色 */}
+                          <div className="story-item__duration" style={{ backgroundColor: '#bbdefb' }}>
+                            <Clock size={14} color="#1565c0" />
+                            <span style={{ color: '#1565c0' }}>15 min</span>
+                          </div>
+                          
                           <div className="story-item__content">
                             <h3 className="story-item__title">Talk with Cat</h3>
                             <p className="story-item__description">Practice conversation skills with an AI cat that responds to your language learning.</p>
@@ -1306,10 +1344,6 @@ export const LearningCard = () => {
                                   </div>
                                   <span>90% correct</span>
                                 </div>
-                              </div>
-                              <div className="story-item__duration">
-                                <Clock size={14} />
-                                <span>15 min</span>
                               </div>
                             </div>
                           </div>
@@ -1535,6 +1569,16 @@ export const LearningCard = () => {
           isOpen={showWordSearchGame}
           onClose={() => setShowWordSearchGame(false)}
           words={selectedUnit.vocabulary.map((vocab: any) => vocab.word.toLowerCase())}
+          unitTitle={selectedUnit.title}
+        />
+      )}
+
+      {showForestStory && selectedUnit && (
+        <ForestStory
+          isOpen={showForestStory}
+          onClose={() => setShowForestStory(false)}
+          unitVocabulary={selectedUnit.vocabulary || []}
+          unitGrammar={selectedUnit.grammar || []}
           unitTitle={selectedUnit.title}
         />
       )}

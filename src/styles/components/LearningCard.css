@@ -911,20 +911,17 @@
 }
 
 .story-item {
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  min-width: 0; /* 防止内容溢出 */
   position: relative;
-  transform-style: preserve-3d;
-  perspective: 1000px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
 }
 
 .story-item:hover {
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .story-item:hover .story-item__image-wrapper {
@@ -937,13 +934,13 @@
 }
 
 .story-item__image-wrapper {
-  height: 160px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  border-radius: 12px 12px 0 0;
   overflow: hidden;
-  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* 浮动气泡效果 */
@@ -1094,7 +1091,7 @@
 }
 
 .story-item__content {
-  padding: 24px;
+  padding: 16px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1165,15 +1162,17 @@
 }
 
 .story-item__duration {
+  position: absolute;
+  top: 108px; /* 调整位置到上下部分的交界处 */
+  right: -8px;
+  border-radius: 8px;
+  padding: 4px 10px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 6px 12px;
-  border-radius: 20px;
-  width: fit-content;
-  font-size: 0.85rem;
-  color: #666;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  z-index: 3;
 }
 
 /* 响应式调整 */
