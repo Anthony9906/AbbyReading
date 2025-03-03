@@ -17,7 +17,7 @@ import { StoryContinueModal } from './StoryContinueModal';
 import { supabase } from '../lib/supabase';
 import WordSearchGame from './WordSearchGame';
 import ForestStory from './ForestStory';
-import { saveStoryContinuation, saveQuizSubmission } from '../services/storyService';
+import { saveStoryContinuation, saveQuizSubmission, saveForestStory, saveForestStoryQuizSubmission } from '../services/storyService';
 
 interface VocabWord {
   word: string;
@@ -106,6 +106,7 @@ export const LearningCard = () => {
     quizQuestions: any[];
     unitTitle: string;
   } | null>(null);
+  const [currentForestStoryId, setCurrentForestStoryId] = useState<string | null>(null);
 
   // 从 Redux 获取单元数据
   const { data: units, status } = useAppSelector((state) => state.units);
@@ -753,7 +754,7 @@ export const LearningCard = () => {
     setShowWordSearchGame(true);
   };
 
-  // 优化 Forest Story 卡片的点击处理方法
+  // 修改 handleNewStoryClick 方法
   const handleNewStoryClick = async () => {
     // 1. 立即显示弹窗（loading状态）
     setShowForestStory(true);
@@ -907,6 +908,69 @@ export const LearningCard = () => {
           }).filter(Boolean) : [];
         });
         
+        // 提取使用的词汇和语法
+        const usedVocabulary: string[] = [];
+        const usedGrammar: string[] = [];
+        
+        // 从对话中提取使用的词汇
+        storyData.dialogues.forEach((page: any[]) => {
+          if (Array.isArray(page)) {
+            page.forEach((dialogue: any) => {
+              if (dialogue && dialogue.text) {
+                // 提取单词
+                const words = dialogue.text.split(/\s+/).map((word: string) => 
+                  word.replace(/[.,!?;:"'()]/g, '').toLowerCase()
+                );
+                
+                // 检查是否是单元词汇
+                words.forEach((word: string) => {
+                  if (word && vocabData.some((v: any) => v.word.toLowerCase() === word)) {
+                    if (!usedVocabulary.includes(word)) {
+                      usedVocabulary.push(word);
+                    }
+                  }
+                });
+                
+                // 如果对话中包含语法点，添加到使用的语法中
+                if (dialogue.grammar) {
+                  const grammarPoint = dialogue.grammar.toLowerCase();
+                  if (!usedGrammar.includes(grammarPoint)) {
+                    usedGrammar.push(grammarPoint);
+                  }
+                }
+              }
+            });
+          }
+        });
+        
+        // 保存到数据库
+        if (user) {
+          try {
+            const savedStory = await saveForestStory({
+              user_id: user.id,
+              unit_id: selectedUnit?.id || '',
+              story_data: {
+                dialogues: processedDialogues,
+                quizQuestions: storyData.quizQuestion
+              },
+              used_vocabulary: usedVocabulary,
+              used_grammar: usedGrammar
+            });
+            
+            console.log('Saved forest story:', savedStory);
+            
+            // 保存故事ID，以便后续提交测验时使用
+            if (savedStory && savedStory.id) {
+              setCurrentForestStoryId(savedStory.id);
+            }
+            
+            
+          } catch (saveError) {
+            console.error('Error saving forest story to database:', saveError);
+            // 继续处理，即使保存失败也显示故事
+          }
+        }
+        
         // 3. 设置组件的内容用于显示
         setForestStoryData({
           dialogues: processedDialogues,
@@ -928,6 +992,34 @@ export const LearningCard = () => {
       setShowForestStory(false);
     } finally {
       setIsForestStoryLoading(false);
+    }
+  };
+
+  // 添加处理森林故事测验提交的方法
+  const handleForestStoryQuizSubmission = async (answers: any[]) => {
+    if (!user || !currentForestStoryId) return;
+    
+    try {
+      // 计算得分
+      const correctAnswers = answers.filter(a => a.isCorrect).length;
+      const score = Math.round((correctAnswers / answers.length) * 100);
+      
+      // 保存提交结果
+      await saveForestStoryQuizSubmission({
+        forest_story_id: currentForestStoryId,
+        user_id: user.id,
+        answers,
+        score
+      });
+      
+      // 更新统计数据
+      
+      // 显示成功消息
+      toast.success(`Quiz submitted! Your score: ${score}%`);
+      
+    } catch (error) {
+      console.error('Error saving forest story quiz submission:', error);
+      toast.error('Failed to submit quiz. Please try again.');
     }
   };
 
@@ -1759,7 +1851,7 @@ export const LearningCard = () => {
           isLoading={isForestStoryLoading}
           storyData={forestStoryData}
           unitVocabulary={selectedUnit?.vocabulary || []}
-          unitGrammar={selectedUnit?.grammar || []}
+          onQuizSubmit={handleForestStoryQuizSubmission}
         />
       )}
     </div>

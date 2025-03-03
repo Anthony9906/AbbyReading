@@ -181,6 +181,7 @@
   border: 2px solid;
   font-size: 2rem;
   margin-bottom: 4px;
+  animation: fs-bounce 2s infinite;
 }
 
 .fs-character-name {
@@ -551,20 +552,103 @@
   }
 }
 
-/* 添加对话动画 */
+/* 增强对话气泡动画 */
 .fs-dialogue-animate {
-  animation: fs-slideIn 0.5s ease forwards;
+  animation: fs-popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   opacity: 0;
-  transform: translateY(20px);
+  transform: scale(0.8) translateY(20px);
+  transform-origin: left center;
 }
 
-@keyframes fs-slideIn {
-  from {
+@keyframes fs-popIn {
+  0% {
     opacity: 0;
-    transform: translateY(20px);
+    transform: scale(0.8) translateY(20px);
   }
-  to {
+  60% {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1.05) translateY(-5px);
   }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 为不同角色添加不同的动画变体 */
+.fs-dialogue-row:nth-child(odd) .fs-dialogue-animate {
+  animation-name: fs-popInLeft;
+  transform-origin: left center;
+}
+
+.fs-dialogue-row:nth-child(even) .fs-dialogue-animate {
+  animation-name: fs-popInRight;
+  transform-origin: right center;
+}
+
+@keyframes fs-popInLeft {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateX(-20px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05) translateX(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+@keyframes fs-popInRight {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateX(20px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05) translateX(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+/* 添加打字机效果 */
+.fs-typing-effect {
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: fs-typing 1.5s steps(40, end) forwards;
+}
+
+@keyframes fs-typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+/* 添加说话指示器 */
+.fs-speaking {
+  position: relative;
+}
+
+.fs-speaking::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 2px;
+  animation: fs-speaking-indicator 1s infinite;
+}
+
+@keyframes fs-speaking-indicator {
+  0%, 100% { transform: translateX(-50%) scaleX(0.5); }
+  50% { transform: translateX(-50%) scaleX(1); }
 } 

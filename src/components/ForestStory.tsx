@@ -13,7 +13,7 @@ interface ForestStoryProps {
     unitTitle: string;
   } | null;
   unitVocabulary: any[];
-  unitGrammar: any[];
+  onQuizSubmit: (answers: any[]) => Promise<void>;
 }
 
 const ForestStory: React.FC<ForestStoryProps> = ({
@@ -22,7 +22,7 @@ const ForestStory: React.FC<ForestStoryProps> = ({
   isLoading,
   storyData,
   unitVocabulary,
-  unitGrammar
+  onQuizSubmit
 }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [showTranslation, setShowTranslation] = useState(false);
@@ -36,6 +36,16 @@ const ForestStory: React.FC<ForestStoryProps> = ({
   // 使用传入的 storyData
   const [storyDialogues, setStoryDialogues] = useState<any[][]>([]);
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  
+  // 添加状态来跟踪所有测验答案
+  const [quizAnswers, setQuizAnswers] = useState<{
+    questionIndex: number;
+    selectedOption: string;
+    isCorrect: boolean;
+  }[]>([]);
+  
+  // 添加状态来跟踪是否已提交所有答案
+  const [allAnswersSubmitted, setAllAnswersSubmitted] = useState(false);
   
   // 初始化数据
   useEffect(() => {
@@ -69,16 +79,21 @@ const ForestStory: React.FC<ForestStoryProps> = ({
   
   // 修改 nextPage 函数
   const nextPage = () => {
-    if (showQuiz) {
-      // 如果当前显示的是测验，进入下一页
-      setShowQuiz(false);
-      setCurrentQuizAnswer(null);
-      if (currentPage < storyDialogues.length - 1) {
-        setCurrentPage(currentPage + 1);
-      }
-    } else {
-      // 如果当前显示的是对话，切换到测验
+    // 如果当前页有测验问题且还没显示测验，则显示测验
+    if (quizQuestions && quizQuestions[currentPage] && !showQuiz) {
       setShowQuiz(true);
+      return; // 停止函数执行，不进入下一页
+    }
+    
+    // 只有在没有当前页测验或已经回答正确的情况下才进入下一页
+    if (currentPage < storyDialogues.length - 1) {
+      setCurrentPage(currentPage + 1);
+      setHighlightedWord(null);
+      setShowQuiz(false);
+      setCurrentQuizAnswer(null); // 重置测验答案
+    } else {
+      // 如果是最后一页，检查是否所有测验都已完成
+      checkAllQuizzesCompleted();
     }
   };
   
@@ -105,36 +120,64 @@ const ForestStory: React.FC<ForestStoryProps> = ({
   const handleQuizAnswer = (index: number) => {
     setCurrentQuizAnswer(index.toString());
     
-    // 获取当前页面的测验
-    const currentQuiz = quizQuestions[currentPage];
-    
-    if (currentQuiz && index === currentQuiz.correctAnswer) {
-      toast.success('Correct! Well done!');
-      setQuizAnswered(true);
-      
-      // 答对后，延迟一秒自动进入下一页
+    // 检查答案是否正确
+    const currentQuestion = quizQuestions[currentPage];
+    if (currentQuestion && index === currentQuestion.correctAnswer) {
+      // 答案正确，延迟一会儿后自动进入下一页
       setTimeout(() => {
-        setShowQuiz(false);
-        setCurrentQuizAnswer(null);
         if (currentPage < storyDialogues.length - 1) {
           setCurrentPage(currentPage + 1);
+          setHighlightedWord(null);
+          setShowQuiz(false);
+          setCurrentQuizAnswer(null);
+        } else {
+          checkAllQuizzesCompleted();
         }
-        setQuizAnswered(false);
-      }, 1000);
+      }, 1000); // 延迟1秒后进入下一页
     } else {
-      toast.error('Not quite right. Try again!');
-      // 答错后，延迟清除选择，让用户重新尝试
-      setTimeout(() => {
-        setCurrentQuizAnswer(null);
-      }, 1000);
+      // 答案错误，显示错误提示（您需要在UI中添加相应的错误提示）
+      // 这里可以添加震动效果或其他视觉反馈
     }
   };
+  
+  // 添加检查所有测验是否完成的函数
+  const checkAllQuizzesCompleted = () => {
+    // 检查是否所有测验都已回答
+    if (quizQuestions && quizAnswers.length >= quizQuestions.length) {
+      // 计算得分
+      const correctAnswers = quizAnswers.filter(answer => answer.isCorrect).length;
+      const score = (correctAnswers / quizQuestions.length) * 100;
+      
+      // 如果还没提交过，则提交答案
+      if (!allAnswersSubmitted) {
+        setAllAnswersSubmitted(true);
+        
+        // 调用父组件提供的onQuizSubmit函数提交答案
+        onQuizSubmit(quizAnswers)
+          .then(() => {
+            toast.success(`Quiz completed! Your score: ${score.toFixed(0)}%`);
+          })
+          .catch(error => {
+            console.error('Failed to submit quiz answers:', error);
+            toast.error('Failed to save your quiz results. Please try again.');
+            setAllAnswersSubmitted(false);
+          });
+      }
+    }
+  };
+  
+  // 在组件更新时检查是否所有测验都已完成
+  useEffect(() => {
+    if (quizQuestions && quizAnswers.length > 0) {
+      checkAllQuizzesCompleted();
+    }
+  }, [quizAnswers, quizQuestions]);
   
   // 文本朗读功能
   const speakText = (text: string) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9; // 稍微放慢速度，适合儿童
+      utterance.rate = 0.8; // 稍微放慢速度，适合儿童
       utterance.pitch = 1.1; // 稍微提高音调，更适合儿童
       window.speechSynthesis.speak(utterance);
     }
@@ -197,12 +240,20 @@ const ForestStory: React.FC<ForestStoryProps> = ({
                     dialogue && dialogue.character && visibleDialogues.includes(index) && (
                       <div 
                         key={index}
-                        className="fs-dialogue-row fs-dialogue-animate"
+                        className={`fs-dialogue-row fs-dialogue-animate`}
+                        style={{ 
+                          animationDelay: `${0.1 * index}s`,
+                          zIndex: 100 - index // 确保新对话显示在上层
+                        }}
                       >
                         <div className="fs-character-avatar">
                           <div 
-                            className="fs-character-emoji-small"
-                            style={{ borderColor: dialogue.character.color }}
+                            className={`fs-character-emoji-small ${index === visibleDialogues.length - 1 ? 'fs-speaking' : ''}`}
+                            style={{ 
+                              borderColor: dialogue.character.color,
+                              animationDelay: `${0.2 * index}s`
+                            }}
+                            onClick={() => setSelectedCharacter(dialogue.character)}
                           >
                             <span role="img" aria-label={dialogue.character.species}>
                               {dialogue.character.emoji}
@@ -210,7 +261,11 @@ const ForestStory: React.FC<ForestStoryProps> = ({
                           </div>
                           <span 
                             className="fs-character-name" 
-                            style={{ backgroundColor: dialogue.character.color }}
+                            style={{ 
+                              backgroundColor: dialogue.character.color,
+                              opacity: 0,
+                              animation: `fs-fadeIn 0.5s ${0.3 * index}s forwards`
+                            }}
                           >
                             {dialogue.character.name}
                           </span>
@@ -239,6 +294,11 @@ const ForestStory: React.FC<ForestStoryProps> = ({
                                       key={i}
                                       className={`fs-dialogue-word ${isVocabWord ? 'fs-vocab-word' : ''}`}
                                       onClick={() => isVocabWord && handleWordClick(cleanWord)}
+                                      style={{
+                                        animationDelay: `${0.03 * i + 0.5 * index}s`,
+                                        opacity: 0,
+                                        animation: `fs-fadeIn 0.3s ${0.03 * i + 0.5 * index}s forwards`
+                                      }}
                                     >
                                       {word}{' '}
                                     </span>
@@ -247,20 +307,36 @@ const ForestStory: React.FC<ForestStoryProps> = ({
                                 <button 
                                   className="fs-speak-button"
                                   onClick={() => speakText(dialogue.text)}
+                                  style={{
+                                    opacity: 0,
+                                    animation: `fs-fadeIn 0.5s ${0.5 * index + 1}s forwards`
+                                  }}
                                 >
                                   <Volume size={16} />
                                 </button>
                               </p>
                               
                               {showTranslation && dialogue.translation && (
-                                <p className="fs-dialogue-translation">
+                                <p 
+                                  className="fs-dialogue-translation"
+                                  style={{
+                                    opacity: 0,
+                                    animation: `fs-fadeIn 0.5s ${0.5 * index + 1.2}s forwards`
+                                  }}
+                                >
                                   {dialogue.translation}
                                 </p>
                               )}
                             </div>
                             
                             {dialogue.grammar && (
-                              <div className="fs-grammar-tag">
+                              <div 
+                                className="fs-grammar-tag"
+                                style={{
+                                  opacity: 0,
+                                  animation: `fs-fadeIn 0.5s ${0.5 * index + 1.5}s forwards`
+                                }}
+                              >
                                 {dialogue.grammar}
                               </div>
                             )}
